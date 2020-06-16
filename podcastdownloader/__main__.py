@@ -61,18 +61,14 @@ if __name__ == "__main__":
         return in_feed
 
     def fillEpisode(ep):
-        ep.parseFeed()
         try:
+            ep.parseFeed()
             ep.calcPath(args.destination)
-        except PodcastException:
-            return
-        ep.checkExistence()
-        if ep.status == Status.pending:
-            try:
+            ep.checkExistence()
+            if ep.status == Status.pending:
                 ep.download()
-            except PodcastException:
-                # this happens when there's no link provided. no idea what to do
-                pass
+        except PodcastException:
+            pass
         # print('{} complete'.format(ep.title))
 
     pool = multiprocessing.Pool(10)
