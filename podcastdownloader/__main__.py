@@ -53,12 +53,26 @@ if __name__ == "__main__":
     setstage('Updating')
     print('Updating feeds...')
 
-    for feed in tqdm(feeds):
-        feed.getFeed()
-        feed.fillEpisodes()
-        print('{} episodes found'.format(sum([len(feed.feed_episodes) for feed in feeds])))
+    episode_queue = []
 
-    download_queue = multiprocessing.JoinableQueue()
+    def parseFeed(in_feed):
+        in_feed.getFeed()
+        return in_feed
+
+    def fillEpisode(ep):
+        ep.parseFeed()
+        ep.calcPath(args.destination)
+        ep.checkExistence()
+        if ep.status == Status.pending:
+            ep.download()
+        print('{} complete'.format(episode.title))
+
+    pool = multiprocessing.Pool(10)
+
+    feeds = list(tqdm(pool.imap_unordered(parseFeed, feeds), total=len(feeds)))
+
+    episode_queue = [ep for feed in feeds for ep in feed.feed_episodes]
+    print('{} episodes found'.format(len(episode_queue)))
 
     for feed in feeds:
         dest = pathlib.Path(args.destination, feed.title)
@@ -66,13 +80,7 @@ if __name__ == "__main__":
             logging.debug('Creating folder {}'.format(dest))
             os.mkdir(pathlib.Path(args.destination, feed.title))
 
-        for ep in feed.feed_episodes:
-            ep.calcPath(args.destination)
-            ep.checkExistence()
+    list(tqdm(pool.imap_unordered(fillEpisode, episode_queue), total=len(episode_queue)))
 
-        for episode in filter(lambda ep: ep.status != Status.downloaded, feed.feed_episodes):
-            download_queue.put(episode)
-
-    while download_queue.empty() is False:
-        ep.download()
-        print()
+    pool.close()
+    pool.join()
