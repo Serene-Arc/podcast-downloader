@@ -3,16 +3,24 @@
 '''Class for feeds'''
 
 import feedparser
-from podcastdownloader.episode import Episode
+from episode import Episode, PodcastException
+
 
 class Feed:
-    def __init__(self, url:str):
+    def __init__(self, url: str):
         self.url = url
         self.feed_episodes = []
         self.downloaded_episodes = []
+
     def getFeed(self):
         self.feed = feedparser.parse(self.url)
         self.title = self.feed['feed']['title']
         for entry in self.feed['entries']:
-            self.feed_episodes.append(Episode(entry))
-        
+            self.feed_episodes.append(Episode(entry, self.title))
+
+    def fillEpisodes(self):
+        for episode in self.feed_episodes:
+            try:
+                episode.parseFeed()
+            except PodcastException as e:
+                print(e)
