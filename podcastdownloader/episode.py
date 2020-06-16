@@ -78,14 +78,15 @@ class Episode:
             self.status = Status.downloaded
 
         try:
-            tag_file = mutagen.easyid3.EasyID3(self.path)
-        except mutagen.MutagenError as e:
             tag_file = mutagen.File(self.path, easy=True)
             try:
                 tag_file.add_tags()
             except mutagen.MutagenError as e:
                 pass
 
-        tag_file['title'] = self.title
-        tag_file['album'] = self.podcast
-        tag_file.save()
+            tag_file['title'] = self.title
+            tag_file['album'] = self.podcast
+            tag_file.save()
+        except mutagen.MutagenError:
+            # just fail silently for now, the tags are a pain
+            pass
