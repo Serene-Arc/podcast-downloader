@@ -8,7 +8,7 @@ from tqdm import tqdm
 from feed import Feed
 from episode import Episode, Status
 from stageprint import setstage, print, input
-from multiprocessing import Pool
+import multiprocessing
 import logging
 import os
 
@@ -25,11 +25,11 @@ logging.getLogger(__name__).setLevel(logging.DEBUG)
 if __name__ == "__main__":
     parser.add_argument('-d', '--destination', help='directory to store downloads')
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
-    parser.add_argument('-t', '--threads', type=int, default=3, help='number of concurrent downloads')
+    # parser.add_argument('-t', '--threads', type=int, default=3, help='number of concurrent downloads')
     parser.add_argument('-o', '--opml', help='location of an OPML file to load')
-    parser.add_argument('-s', '--split-podcasts', action='store_true',
-                        help='flag to split the podcasts into different directories')
-    parser.add_argument('-n', '--number', type=int, default=-1, help='number of episodes to download')
+    # parser.add_argument('-s', '--split-podcasts', action='store_true',
+    #                     help='flag to split the podcasts into different directories')
+    # parser.add_argument('-n', '--number', type=int, default=-1, help='number of episodes to download')
 
     args = parser.parse_args()
     setstage('Loading')
@@ -58,6 +58,8 @@ if __name__ == "__main__":
         feed.fillEpisodes()
         print('{} episodes found'.format(sum([len(feed.feed_episodes) for feed in feeds])))
 
+    download_queue = multiprocessing.JoinableQueue()
+
     for feed in feeds:
         dest = pathlib.Path(args.destination, feed.title)
         if os.path.exists(dest) is False:
@@ -68,5 +70,9 @@ if __name__ == "__main__":
             ep.calcPath(args.destination)
             ep.checkExistence()
 
-        feed.feed_episodes = list(filter(lambda ep: ep.status != Status.downloaded, feed.feed_episodes))
+        for episode in filter(lambda ep: ep.status != Status.downloaded, feed.feed_episodes):
+            download_queue.put(episode)
+
+    while download_queue.empty() is False:
+        ep.download()
         print()
