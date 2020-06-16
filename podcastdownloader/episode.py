@@ -66,12 +66,14 @@ class Episode:
 
     def download(self):
         # this is a rate-limiting loop in case the connection is reset
+        attempts = 1
         while True:
             try:
                 content = requests.get(self.download_link).content
                 break
             except requests.exceptions.ChunkedEncodingError:
-                time.sleep(30)
+                time.sleep(30 * attempts)
+                attempts += 1
 
         with open(self.path, 'wb') as episode_file:
             episode_file.write(content)
