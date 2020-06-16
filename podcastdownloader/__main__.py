@@ -6,7 +6,7 @@ import xml.etree.ElementTree as et
 import pathlib
 from tqdm import tqdm
 from feed import Feed
-from episode import Episode, Status
+from episode import Episode, Status, PodcastException
 from stageprint import setstage, print, input
 import multiprocessing
 import logging
@@ -62,10 +62,17 @@ if __name__ == "__main__":
 
     def fillEpisode(ep):
         ep.parseFeed()
-        ep.calcPath(args.destination)
+        try:
+            ep.calcPath(args.destination)
+        except PodcastException:
+            return
         ep.checkExistence()
         if ep.status == Status.pending:
-            ep.download()
+            try:
+                ep.download()
+            except PodcastException:
+                # this happens when there's no link provided. no idea what to do
+                pass
         # print('{} complete'.format(ep.title))
 
     pool = multiprocessing.Pool(10)
