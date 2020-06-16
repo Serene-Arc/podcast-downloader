@@ -29,7 +29,7 @@ class Episode:
         self.download_link = None
 
     def parseFeed(self):
-        self.title = self.feed_entry['title']
+        self.title = re.sub(r'(/|\0)', '', self.feed_entry['title'])
         if 'links' in self.feed_entry:
             for link in self.feed_entry['links']:
                 if re.match('audio*', link['type']):
