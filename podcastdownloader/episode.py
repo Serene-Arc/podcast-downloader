@@ -7,6 +7,7 @@ import re
 import os
 import pathlib
 import requests
+import requests.exceptions
 import mutagen
 import mutagen.easyid3
 
@@ -64,8 +65,16 @@ class Episode:
             self.status = Status.downloaded
 
     def download(self):
+        # this is a rate-limiting loop in case the connection is reset
+        while True:
+            try:
+                content = requests.get(self.download_link).content
+                break
+            except requests.exceptions.ChunkedEncodingError:
+                time.sleep(30)
+
         with open(self.path, 'wb') as episode_file:
-            episode_file.write(requests.get(self.download_link).content)
+            episode_file.write(content)
             self.status = Status.downloaded
 
         try:

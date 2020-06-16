@@ -11,6 +11,7 @@ from stageprint import setstage, print, input
 import multiprocessing
 import logging
 import os
+import random
 
 parser = argparse.ArgumentParser()
 logger = logging.getLogger(__name__)
@@ -79,6 +80,11 @@ if __name__ == "__main__":
         if os.path.exists(dest) is False:
             logging.debug('Creating folder {}'.format(dest))
             os.mkdir(pathlib.Path(args.destination, feed.title))
+
+    # randomise the list, if all the episodes from one server are close
+    # together, then the server will start cutting off downloads. this should
+    # limit/prevent that as much as possible to keep the average speed high
+    random.shuffle(episode_queue)
 
     list(tqdm(pool.imap_unordered(fillEpisode, episode_queue), total=len(episode_queue)))
 
