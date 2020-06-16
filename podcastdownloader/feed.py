@@ -14,7 +14,7 @@ class Feed:
 
     def getFeed(self):
         self.feed = feedparser.parse(self.url)
-        self.title = self.feed['feed']['title']
+        self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
         for entry in self.feed['entries']:
             self.feed_episodes.append(Episode(entry, self.title))
 
