@@ -54,8 +54,10 @@ class Episode:
         self.path = None
         if self.file_type == 'audio/mp4':
             self.path = pathlib.Path(intended_path, self.title + '.m4a')
+        elif self.file_type == 'audio/mpeg':
+            self.path = pathlib.Path(intended_path, self.title + '.mp3')
         if self.path is None:
-            raise PodcastException('Cannot determine filename')
+            raise PodcastException('Cannot determine filename with codec {}'.format(self.file_type))
 
     def checkExistence(self):
         if os.path.exists(self.path) is True:
