@@ -71,7 +71,7 @@ class Episode:
             try:
                 content = requests.get(self.download_link).content
                 break
-            except requests.exceptions.ChunkedEncodingError:
+            except (requests.exceptions.ChunkedEncodingError, requests.exceptions.ConnectionError):
                 time.sleep(30 * attempts)
                 attempts += 1
 
