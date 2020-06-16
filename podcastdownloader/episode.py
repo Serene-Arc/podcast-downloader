@@ -7,6 +7,7 @@ import re
 import os
 import pathlib
 import requests
+import mutagen
 
 
 class Status(Enum):
@@ -63,3 +64,16 @@ class Episode:
         with open(self.path, 'wb') as episode_file:
             episode_file.write(requests.get(self.download_link))
             self.status = Status.downloaded
+
+            tag_file = mutagen.File(episode_file, easy=True)
+            if tag_file.tags is None:
+                try:
+                    tag_file.add_tags()
+                except mutagen.MutagenError:
+                    print('Cannot write metadata tags to file')
+                    return
+
+            if not tag_file['title']:
+                tag_file['title'] = self.title
+            if not tag_file['album']:
+                tag_file['album'] = self.podcast
