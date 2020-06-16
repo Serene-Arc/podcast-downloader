@@ -58,3 +58,8 @@ class Episode:
     def checkExistence(self):
         if os.path.exists(self.path) is True:
             self.status = Status.downloaded
+
+    def download(self):
+        with open(self.path, 'wb') as episode_file:
+            episode_file.write(requests.get(self.download_link))
+            self.status = Status.downloaded
