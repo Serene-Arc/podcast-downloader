@@ -54,3 +54,7 @@ class Episode:
             self.path = pathlib.Path(intended_path, self.title + '.m4a')
         if self.path is None:
             raise PodcastException('Cannot determine filename')
+
+    def checkExistence(self):
+        if os.path.exists(self.path) is True:
+            self.status = Status.downloaded

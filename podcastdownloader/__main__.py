@@ -6,7 +6,7 @@ import xml.etree.ElementTree as et
 import pathlib
 from tqdm import tqdm
 from feed import Feed
-from episode import Episode
+from episode import Episode, Status
 from stageprint import setstage, print, input
 from multiprocessing import Pool
 import logging
@@ -63,6 +63,10 @@ if __name__ == "__main__":
         if os.path.exists(dest) is False:
             logging.debug('Creating folder {}'.format(dest))
             os.mkdir(pathlib.Path(args.destination, feed.title))
+
         for ep in feed.feed_episodes:
             ep.calcPath(args.destination)
-    input()
+            ep.checkExistence()
+
+        feed.feed_episodes = list(filter(lambda ep: ep.status != Status.downloaded, feed.feed_episodes))
+        print()
