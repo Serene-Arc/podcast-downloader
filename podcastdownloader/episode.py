@@ -8,6 +8,7 @@ import os
 import pathlib
 import requests
 import mutagen
+import mutagen.easyid3
 
 
 class Status(Enum):
@@ -62,18 +63,18 @@ class Episode:
 
     def download(self):
         with open(self.path, 'wb') as episode_file:
-            episode_file.write(requests.get(self.download_link))
+            episode_file.write(requests.get(self.download_link).content)
             self.status = Status.downloaded
 
-            tag_file = mutagen.File(episode_file, easy=True)
-            if tag_file.tags is None:
-                try:
-                    tag_file.add_tags()
-                except mutagen.MutagenError:
-                    print('Cannot write metadata tags to file')
-                    return
+        try:
+            tag_file = mutagen.easyid3.EasyID3(self.path)
+        except mutagen.MutagenError as e:
+            tag_file = mutagen.File(self.path, easy=True)
+            try:
+                tag_file.add_tags()
+            except mutagen.MutagenError as e:
+                pass
 
-            if not tag_file['title']:
-                tag_file['title'] = self.title
-            if not tag_file['album']:
-                tag_file['album'] = self.podcast
+        tag_file['title'] = self.title
+        tag_file.tags['album'] = self.podcast
+        tag_file.save()
