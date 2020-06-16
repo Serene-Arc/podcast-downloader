@@ -78,5 +78,5 @@ class Episode:
                 pass
 
         tag_file['title'] = self.title
-        tag_file.tags['album'] = self.podcast
+        tag_file['album'] = self.podcast
         tag_file.save()
