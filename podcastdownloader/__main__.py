@@ -65,7 +65,7 @@ if __name__ == "__main__":
         ep.checkExistence()
         if ep.status == Status.pending:
             ep.download()
-        print('{} complete'.format(episode.title))
+        print('{} complete'.format(ep.title))
 
     pool = multiprocessing.Pool(10)
 
