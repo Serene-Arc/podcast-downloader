@@ -83,6 +83,9 @@ if __name__ == "__main__":
 
     pool = multiprocessing.Pool(10)
 
+    # randomise the feed list, just so there's less chance of a slow group
+    random.shuffle(feeds)
+
     feeds = list(tqdm(pool.imap_unordered(parseFeed, feeds), total=len(feeds)))
 
     episode_queue = [ep for feed in feeds for ep in feed.feed_episodes]
