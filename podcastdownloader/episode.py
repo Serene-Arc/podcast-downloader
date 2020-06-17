@@ -72,6 +72,9 @@ class Episode:
                 content = requests.get(self.download_link).content
                 break
             except (requests.exceptions.ChunkedEncodingError, requests.exceptions.ConnectionError):
+                if attempts >= 10:
+                    print('Episode {} failed to download'.format(self.title))
+                    return
                 time.sleep(30 * attempts)
                 attempts += 1
 
@@ -83,7 +86,7 @@ class Episode:
             tag_file = mutagen.File(self.path, easy=True)
             try:
                 tag_file.add_tags()
-            except mutagen.MutagenError as e:
+            except mutagen.MutagenError:
                 pass
 
             tag_file['title'] = self.title
