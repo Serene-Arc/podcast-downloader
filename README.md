@@ -11,6 +11,7 @@ There are three arguments to be supplied to the program:
 - `destination` is the directory that the folder structure will be created in and the podcasts downloaded to
 - `-f, --feed` is the URL for the RSS feed of the podcast
 - `-o, --opml` is the location of an OPML file with podcast data
+- `--file` is the location of a simple text file with an RSS feed URL on each line
 
 Of these, only the destination is required, though one or more feeds and an OPML file must be provided or the program will just complete instantly.
 

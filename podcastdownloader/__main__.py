@@ -26,6 +26,7 @@ logging.getLogger(__name__).setLevel(logging.DEBUG)
 if __name__ == "__main__":
     parser.add_argument('-d', '--destination', help='directory to store downloads')
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
+    parser.add_argument('--file', action='append', help='location of a file of feeds')
     # parser.add_argument('-t', '--threads', type=int, default=3, help='number of concurrent downloads')
     parser.add_argument('-o', '--opml', help='location of an OPML file to load')
     # parser.add_argument('-s', '--split-podcasts', action='store_true',
@@ -50,6 +51,12 @@ if __name__ == "__main__":
             feeds.append(Feed(arg_feed))
             logging.debug('Feed {} added'.format(arg_feed))
             print('Feed {} added'.format(arg_feed))
+
+    if args.file:
+        for feed_file in args.file:
+            with open(pathlib.Path(feed_file), 'r') as file:
+                for line in file.readlines():
+                    feeds.append(Feed(line))
 
     setstage('Updating')
     print('Updating feeds...')
