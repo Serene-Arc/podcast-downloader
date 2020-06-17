@@ -10,6 +10,7 @@ import requests
 import requests.exceptions
 import mutagen
 import mutagen.easyid3
+from typing import Optional
 
 
 class Status(Enum):
@@ -20,6 +21,21 @@ class Status(Enum):
 
 class PodcastException(Exception):
     pass
+
+
+def _rate_limited_request(url: str) -> Optional[requests.Response]:
+    attempts = 1
+    while True:
+        try:
+            response = requests.get(url, timeout=180, stream=True, allow_redirects=True)
+            return response
+        except (requests.exceptions.ChunkedEncodingError,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout) as e:
+            if attempts >= 10:
+                raise PodcastException('Connection was limited/refused: {}'.format(e))
+            time.sleep(30 * attempts)
+            attempts += 1
 
 
 class Episode:
@@ -44,11 +60,13 @@ class Episode:
                 'No download link found for episode {} in podcast {}'.format(
                     self.title, self.podcast))
 
-        r = requests.head(self.download_link, allow_redirects=True)
+        r = _rate_limited_request(self.download_link)
         self.file_type = r.headers['content-type']
         self.published = self.feed_entry['published_parsed']
         self.id = self.feed_entry['id']
         self.status = Status.pending
+
+        r.close()
 
     def calcPath(self, dest_folder):
         intended_path = pathlib.Path(dest_folder, self.podcast)
@@ -65,20 +83,7 @@ class Episode:
             self.status = Status.downloaded
 
     def download(self):
-        # this is a rate-limiting loop in case the connection is reset
-        attempts = 1
-        while True:
-            try:
-                content = requests.get(self.download_link, timeout=180).content
-                break
-            except (requests.exceptions.ChunkedEncodingError,
-                    requests.exceptions.ConnectionError,
-                    requests.exceptions.Timeout):
-                if attempts >= 10:
-                    print('Episode {} failed to download'.format(self.title))
-                    return
-                time.sleep(30 * attempts)
-                attempts += 1
+        content = _rate_limited_request(self.download_link).content
 
         with open(self.path, 'wb') as episode_file:
             episode_file.write(content)
