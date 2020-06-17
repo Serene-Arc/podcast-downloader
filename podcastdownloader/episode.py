@@ -69,9 +69,11 @@ class Episode:
         attempts = 1
         while True:
             try:
-                content = requests.get(self.download_link).content
+                content = requests.get(self.download_link, timeout=180).content
                 break
-            except (requests.exceptions.ChunkedEncodingError, requests.exceptions.ConnectionError):
+            except (requests.exceptions.ChunkedEncodingError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout):
                 if attempts >= 10:
                     print('Episode {} failed to download'.format(self.title))
                     return

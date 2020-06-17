@@ -4,6 +4,8 @@
 
 import feedparser
 from episode import Episode, PodcastException
+import requests
+import requests.exceptions
 
 
 class Feed:
@@ -13,15 +15,13 @@ class Feed:
         self.downloaded_episodes = []
 
     def getFeed(self):
-        self.feed = feedparser.parse(self.url)
-
         try:
-            self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
-        except KeyError:
-            # this hits if the RSS feed fetch failed for some reason
-            print('Feed for {} failed to parse'.format(self.url))
-            return
+            rss_feed = requests.get(self.url, timeout=120)
+        except requests.exceptions.Timeout:
+            print('Failed to get feed at {}'.format(self.url))
 
+        self.feed = feedparser.parse(rss_feed.text)
+        self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
         for entry in self.feed['entries']:
             self.feed_episodes.append(Episode(entry, self.title))
 
