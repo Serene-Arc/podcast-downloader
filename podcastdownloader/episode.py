@@ -23,11 +23,14 @@ class PodcastException(Exception):
     pass
 
 
-def _rate_limited_request(url: str) -> Optional[requests.Response]:
+def _rate_limited_request(url: str, head_only: bool) -> Optional[requests.Response]:
     attempts = 1
     while True:
         try:
-            response = requests.get(url, timeout=180, stream=True, allow_redirects=True)
+            if head_only:
+                response = requests.head(url, timeout=180, allow_redirects=True)
+            else:
+                response = requests.get(url, timeout=180, allow_redirects=True)
             return response
         except (requests.exceptions.ChunkedEncodingError,
                 requests.exceptions.ConnectionError,
@@ -60,7 +63,7 @@ class Episode:
                 'No download link found for episode {} in podcast {}'.format(
                     self.title, self.podcast))
 
-        r = _rate_limited_request(self.download_link)
+        r = _rate_limited_request(self.download_link, True)
         self.file_type = r.headers['content-type']
         self.published = self.feed_entry['published_parsed']
         self.id = self.feed_entry['id']
@@ -83,7 +86,7 @@ class Episode:
             self.status = Status.downloaded
 
     def download(self):
-        content = _rate_limited_request(self.download_link).content
+        content = _rate_limited_request(self.download_link, False).content
 
         with open(self.path, 'wb') as episode_file:
             episode_file.write(content)
