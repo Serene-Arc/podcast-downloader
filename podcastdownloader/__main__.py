@@ -86,6 +86,7 @@ if __name__ == "__main__":
     # randomise the feed list, just so there's less chance of a slow group
     random.shuffle(feeds)
 
+    setstage('Parsing')
     feeds = list(tqdm(pool.imap_unordered(parseFeed, feeds), total=len(feeds)))
 
     episode_queue = [ep for feed in feeds for ep in feed.feed_episodes]
@@ -102,7 +103,10 @@ if __name__ == "__main__":
     # limit/prevent that as much as possible to keep the average speed high
     random.shuffle(episode_queue)
 
+    setstage('Downloading')
     list(tqdm(pool.imap_unordered(fillEpisode, episode_queue), total=len(episode_queue)))
 
     pool.close()
     pool.join()
+    setstage('End')
+    print('Program complete!')
