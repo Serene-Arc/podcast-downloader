@@ -92,6 +92,7 @@ class Episode:
             episode_file.write(content)
             self.status = Status.downloaded
 
+    def writeTags(self):
         try:
             tag_file = mutagen.File(self.path, easy=True)
             try:
@@ -102,6 +103,6 @@ class Episode:
             tag_file['title'] = self.title
             tag_file['album'] = self.podcast
             tag_file.save()
-        except mutagen.MutagenError:
-            # just fail silently for now, the tags are a pain
-            pass
+
+        except mutagen.MutagenError as e:
+            raise PodcastException('Mutagen failed to write the tags: {}'.format(e))

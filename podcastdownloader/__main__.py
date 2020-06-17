@@ -74,6 +74,10 @@ if __name__ == "__main__":
             ep.checkExistence()
             if ep.status == Status.pending:
                 ep.download()
+                try:
+                    ep.writeTags()
+                except PodcastException as e:
+                    print('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
         except PodcastException as e:
             print('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
 
