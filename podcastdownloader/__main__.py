@@ -38,13 +38,13 @@ if __name__ == "__main__":
     feeds = []
 
     if args.opml:
-        feed_file = pathlib.Path(args.opml)
-        feed_tree = et.parse(feed_file)
+        opml_file = pathlib.Path(args.opml)
+        opml_tree = et.parse(opml_file)
         logger.info('Loading OPML file')
-        for found_feed in feed_tree.getroot().iter('outline'):
-            feeds.append(Feed(found_feed.attrib['xmlUrl']))
-            print('Feed {} added'.format(found_feed.attrib['xmlUrl']))
-            logging.debug('Feed {} added'.format(found_feed.attrib['xmlUrl']))
+        for opml_feed in opml_tree.getroot().iter('outline'):
+            feeds.append(Feed(opml_feed.attrib['xmlUrl']))
+            print('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
+            logging.debug('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
 
     if args.feed:
         for arg_feed in args.feed:
