@@ -75,8 +75,7 @@ if __name__ == "__main__":
             if ep.status == Status.pending:
                 ep.download()
         except PodcastException:
-            pass
-        # print('{} complete'.format(ep.title))
+            print('{} failed'.format(ep.title))
 
     pool = multiprocessing.Pool(10)
 
