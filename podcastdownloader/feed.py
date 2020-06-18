@@ -52,8 +52,9 @@ if __name__ == "__main__":
     feed.getFeed()
 
     existingFiles = []
-    for (dirpath, dirnames, filenames) in os.walk(args.destination):
-        existingFiles.extend([pathlib.PurePath(dirpath, filename) for filename in filenames])
+    print('Scanning existing files...')
+    for (dirpath, dirnames, filenames) in os.walk(destination):
+        existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
 
     dest = pathlib.Path(destination, feed.title)
     if os.path.exists(dest) is False:
@@ -63,9 +64,8 @@ if __name__ == "__main__":
         print('Parsing episode...')
         ep.parseFeed()
         ep.calcPath(destination)
-
-        if ep.path in existingFiles:
+        if str(ep.path) in existingFiles:
             ep.status = Status.downloaded
-
         if ep.status == Status.pending:
-            ep.download()
+            # ep.download()
+            pass
