@@ -56,7 +56,8 @@ if __name__ == "__main__":
         for feed_file in args.file:
             with open(pathlib.Path(feed_file), 'r') as file:
                 for line in file.readlines():
-                    feeds.append(Feed(line))
+                    feeds.append(Feed(line.strip()))
+                    print('Feed {} added'.format(line.strip()))
 
     episode_queue = []
     existingFiles = []
