@@ -67,7 +67,11 @@ if __name__ == "__main__":
         existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
 
     def parseFeed(in_feed):
-        in_feed.getFeed()
+        try:
+            in_feed.getFeed()
+        except KeyError as e:
+            print('Feed {} could not be parsed: {}'.format(in_feed.url, e))
+            return None
         return in_feed
 
     def fillEpisode(ep):
@@ -96,6 +100,7 @@ if __name__ == "__main__":
     print('Updating feeds...')
     feeds = list(tqdm(pool.imap_unordered(parseFeed, feeds), total=len(feeds)))
 
+    feeds = list(filter(None, feeds))
     episode_queue = [ep for feed in feeds for ep in feed.feed_episodes]
     print('{} episodes found'.format(len(episode_queue)))
 
