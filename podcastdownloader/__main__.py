@@ -63,6 +63,10 @@ if __name__ == "__main__":
 
     episode_queue = []
 
+    existingFiles = []
+    for (dirpath, dirnames, filenames) in os.walk(args.destination):
+        existingFiles.extend([pathlib.PurePath(dirpath, filename) for filename in filenames])
+
     def parseFeed(in_feed):
         in_feed.getFeed()
         return in_feed
@@ -71,7 +75,10 @@ if __name__ == "__main__":
         try:
             ep.parseFeed()
             ep.calcPath(args.destination)
-            ep.checkExistence()
+
+            if ep.path in existingFiles:
+                ep.status = Status.downloaded
+
             if ep.status == Status.pending:
                 ep.download()
                 try:

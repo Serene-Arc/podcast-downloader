@@ -51,6 +51,10 @@ if __name__ == "__main__":
     print('Getting feed...')
     feed.getFeed()
 
+    existingFiles = []
+    for (dirpath, dirnames, filenames) in os.walk(args.destination):
+        existingFiles.extend([pathlib.PurePath(dirpath, filename) for filename in filenames])
+
     dest = pathlib.Path(destination, feed.title)
     if os.path.exists(dest) is False:
         os.mkdir(pathlib.Path(destination, feed.title))
@@ -59,6 +63,9 @@ if __name__ == "__main__":
         print('Parsing episode...')
         ep.parseFeed()
         ep.calcPath(destination)
-        ep.checkExistence()
+
+        if ep.path in existingFiles:
+            ep.status = Status.downloaded
+
         if ep.status == Status.pending:
             ep.download()
