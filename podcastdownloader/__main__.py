@@ -58,14 +58,12 @@ if __name__ == "__main__":
                 for line in file.readlines():
                     feeds.append(Feed(line))
 
-    setstage('Updating')
-    print('Updating feeds...')
-
     episode_queue = []
-
     existingFiles = []
+
+    print('Scanning existing files...')
     for (dirpath, dirnames, filenames) in os.walk(args.destination):
-        existingFiles.extend([pathlib.PurePath(dirpath, filename) for filename in filenames])
+        existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
 
     def parseFeed(in_feed):
         in_feed.getFeed()
@@ -76,7 +74,7 @@ if __name__ == "__main__":
             ep.parseFeed()
             ep.calcPath(args.destination)
 
-            if ep.path in existingFiles:
+            if str(ep.path) in existingFiles:
                 ep.status = Status.downloaded
 
             if ep.status == Status.pending:
@@ -93,7 +91,8 @@ if __name__ == "__main__":
     # randomise the feed list, just so there's less chance of a slow group
     random.shuffle(feeds)
 
-    setstage('Parsing')
+    setstage('Updating')
+    print('Updating feeds...')
     feeds = list(tqdm(pool.imap_unordered(parseFeed, feeds), total=len(feeds)))
 
     episode_queue = [ep for feed in feeds for ep in feed.feed_episodes]
