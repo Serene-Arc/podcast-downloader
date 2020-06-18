@@ -77,7 +77,7 @@ class Episode:
     def calcPath(self, dest_folder):
         intended_path = pathlib.Path(dest_folder, self.podcast)
         self.path = None
-        if self.file_type == 'audio/mp4':
+        if self.file_type == 'audio/mp4' or self.file_type == 'audio/x-m4a':
             self.path = pathlib.Path(intended_path, self.title + '.m4a')
         elif self.file_type == 'audio/mpeg' or self.file_type == 'audio/mp3':
             self.path = pathlib.Path(intended_path, self.title + '.mp3')
