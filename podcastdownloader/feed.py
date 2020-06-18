@@ -3,7 +3,7 @@
 '''Class for feeds'''
 
 import feedparser
-from episode import Episode, PodcastException
+from episode import Episode, PodcastException, Status
 import requests
 import requests.exceptions
 
@@ -39,3 +39,26 @@ class Feed:
                 episode.parseFeed()
             except PodcastException as e:
                 print(e)
+
+
+if __name__ == "__main__":
+    import pathlib
+    import os
+
+    feed = Feed(input('Enter a feed URL: '))
+    destination = input('Enter a destination location: ')
+
+    print('Getting feed...')
+    feed.getFeed()
+
+    dest = pathlib.Path(destination, feed.title)
+    if os.path.exists(dest) is False:
+        os.mkdir(pathlib.Path(destination, feed.title))
+
+    for ep in feed.feed_episodes:
+        print('Parsing episode...')
+        ep.parseFeed()
+        ep.calcPath(destination)
+        ep.checkExistence()
+        if ep.status == Status.pending:
+            ep.download()
