@@ -54,9 +54,11 @@ class Episode:
             for link in self.feed_entry['links']:
                 if re.match('audio*', link['type']):
                     self.download_link = link['href']
+                    self.file_type = link['type']
                     break
         elif 'link' in self.feed_entry:
             self.download_link = self.feed_entry['link']
+            self.file_type = None
 
         if not self.download_link:
             raise PodcastException(
@@ -64,7 +66,8 @@ class Episode:
                     self.title, self.podcast))
 
         r = _rate_limited_request(self.download_link, True)
-        self.file_type = r.headers['content-type']
+        if not self.file_type:
+            self.file_type = r.headers['content-type']
         self.published = self.feed_entry['published_parsed']
         self.id = self.feed_entry['id']
         self.status = Status.pending
