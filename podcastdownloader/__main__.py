@@ -24,7 +24,7 @@ logging.getLogger(__name__).setLevel(logging.DEBUG)
 
 
 if __name__ == "__main__":
-    parser.add_argument('-d', '--destination', help='directory to store downloads')
+    parser.add_argument('destination', help='directory to store downloads')
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
     parser.add_argument('--file', action='append', help='location of a file of feeds')
     # parser.add_argument('-t', '--threads', type=int, default=3, help='number of concurrent downloads')
