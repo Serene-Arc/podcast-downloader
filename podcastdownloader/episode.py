@@ -48,7 +48,7 @@ class Episode:
         self.status = Status.blank
         self.download_link = None
 
-    def parseFeed(self):
+    def parseRSSEntry(self):
         self.title = re.sub(r'(/|\0)', '', self.feed_entry['title'])
         if 'links' in self.feed_entry:
             for link in self.feed_entry['links']:
@@ -68,6 +68,7 @@ class Episode:
         r = _rate_limited_request(self.download_link, True)
         if not self.file_type:
             self.file_type = r.headers['content-type']
+
         self.published = self.feed_entry['published_parsed']
         self.id = self.feed_entry['id']
         self.status = Status.pending
@@ -88,7 +89,7 @@ class Episode:
         if os.path.exists(self.path) is True:
             self.status = Status.downloaded
 
-    def download(self):
+    def downloadContent(self):
         content = _rate_limited_request(self.download_link, False).content
 
         with open(self.path, 'wb') as episode_file:
