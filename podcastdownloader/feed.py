@@ -6,6 +6,8 @@ import feedparser
 from episode import Episode, PodcastException, Status
 import requests
 import requests.exceptions
+import os
+import pathlib
 
 
 class Feed:
@@ -21,11 +23,12 @@ class Feed:
             print('Failed to get feed at {}'.format(self.url))
             return
 
-    def parseRSS(self, episode_limit):
+    def parseRSS(self, episode_limit, destination):
         self.__fetch_rss()
         self.feed = feedparser.parse(self.feed)
         self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
 
+        self._makeDirectory(destination)
         if episode_limit == -1:
             episode_limit = len(self.feed['entries'])
         for entry in self.feed['entries'][:episode_limit]:
@@ -36,6 +39,12 @@ class Feed:
         # seems to get the episodes most of the time so easier to wipe it
         self.feed = None
 
+    def _makeDirectory(self, destination):
+        try:
+            os.mkdir(pathlib.Path(destination, self.title))
+        except FileExistsError:
+            pass
+
 
 if __name__ == "__main__":
     import pathlib
@@ -45,16 +54,12 @@ if __name__ == "__main__":
     destination = input('Enter a destination location: ')
 
     print('Getting feed...')
-    feed.parseRSS(-1)
+    feed.parseRSS(-1, destination)
 
     existingFiles = []
     print('Scanning existing files...')
     for (dirpath, dirnames, filenames) in os.walk(destination):
         existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
-
-    dest = pathlib.Path(destination, feed.title)
-    if os.path.exists(dest) is False:
-        os.mkdir(pathlib.Path(destination, feed.title))
 
     for ep in feed.feed_episodes:
         print('Parsing episode...')

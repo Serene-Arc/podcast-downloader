@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     def readyFeed(in_feed):
         try:
-            in_feed.parseRSS(args.limit)
+            in_feed.parseRSS(args.limit, args.destination)
         except KeyError as e:
             print('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
@@ -103,12 +103,6 @@ if __name__ == "__main__":
 
     episode_queue = [ep for feed in subscribedFeeds for ep in feed.feed_episodes]
     print('{} episodes found'.format(len(episode_queue)))
-
-    for subbed_feed in subscribedFeeds:
-        dest = pathlib.Path(args.destination, subbed_feed.title)
-        if os.path.exists(dest) is False:
-            logging.debug('Creating folder {}'.format(dest))
-            os.mkdir(pathlib.Path(args.destination, subbed_feed.title))
 
     # randomise the list, if all the episodes from one server are close
     # together, then the server will start cutting off downloads. this should
