@@ -12,6 +12,7 @@ There are three arguments to be supplied to the program:
 - `-f, --feed` is the URL for the RSS feed of the podcast
 - `-o, --opml` is the location of an OPML file with podcast data
 - `--file` is the location of a simple text file with an RSS feed URL on each line
+- `-l, --limit` is the maximum number of episodes to try and download from the feed. If left blank, it is all episodes, but a small number is fastest for updating a feed
 
 Of these, only the destination is required, though one or more feeds and an OPML file must be provided or the program will just complete instantly.
 

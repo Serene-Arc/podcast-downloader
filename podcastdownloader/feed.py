@@ -21,11 +21,14 @@ class Feed:
             print('Failed to get feed at {}'.format(self.url))
             return
 
-    def parseRSS(self):
+    def parseRSS(self, episode_limit):
         self.__fetch_rss()
         self.feed = feedparser.parse(self.feed)
         self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
-        for entry in self.feed['entries']:
+
+        if episode_limit == -1:
+            episode_limit = len(self.feed['entries'])
+        for entry in self.feed['entries'][:episode_limit]:
             self.feed_episodes.append(Episode(entry, self.title))
 
         # if there's an exception in the feed from feedparser, then the entire
@@ -42,7 +45,7 @@ if __name__ == "__main__":
     destination = input('Enter a destination location: ')
 
     print('Getting feed...')
-    feed.parseRSS()
+    feed.parseRSS(-1)
 
     existingFiles = []
     print('Scanning existing files...')

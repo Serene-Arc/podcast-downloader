@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # parser.add_argument('-t', '--threads', type=int, default=3, help='number of concurrent downloads')
     # parser.add_argument('-s', '--split-podcasts', action='store_true',
     #                     help='flag to split the podcasts into different directories')
-    # parser.add_argument('-n', '--number', type=int, default=-1, help='number of episodes to download')
+    parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
 
     args = parser.parse_args()
     setstage('Loading')
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     def readyFeed(in_feed):
         try:
-            in_feed.parseRSS()
+            in_feed.parseRSS(args.limit)
         except KeyError as e:
             print('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
