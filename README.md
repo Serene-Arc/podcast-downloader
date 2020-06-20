@@ -14,8 +14,11 @@ There are three arguments to be supplied to the program:
 - `--file` is the location of a simple text file with an RSS feed URL on each line
 - `-l, --limit` is the maximum number of episodes to try and download from the feed. If left blank, it is all episodes, but a small number is fastest for updating a feed
 - `-t, --threads` is the number of threads to run concurrently; defaults to 10
+- `-w, --write-list` is a flag to write a chronological list of episodes to the podcast destination
 
-Of these, only the destination is required, though one or more feeds and an OPML file must be provided or the program will just complete instantly.
+The `--feed`, `--file`, and `--opml` flags can all be specified multiple times to aggregate feeds from mutliple locations.
+
+Of these, only the destination is required, though one or more feeds or one or more OPML files must be provided or the program will just complete instantly.
 
 ## Example Command
 

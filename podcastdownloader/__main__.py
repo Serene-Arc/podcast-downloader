@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument('destination', help='directory to store downloads')
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
     parser.add_argument('--file', action='append', help='location of a file of feeds')
-    parser.add_argument('-o', '--opml', help='location of an OPML file to load')
+    parser.add_argument('-o', '--opml', action='append', help='location of an OPML file to load')
     parser.add_argument('-t', '--threads', type=int, default=10, help='number of concurrent downloads')
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
     parser.add_argument('-w', '--write-list', action='store_true', help='flag to write episode list')
@@ -29,11 +29,11 @@ if __name__ == "__main__":
     subscribedFeeds = []
 
     if args.opml:
-        opml_file = pathlib.Path(args.opml)
-        opml_tree = et.parse(opml_file)
-        for opml_feed in opml_tree.getroot().iter('outline'):
-            subscribedFeeds.append(Feed(opml_feed.attrib['xmlUrl']))
-            print('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
+        for opml_loc in args.opml:
+            opml_tree = et.parse(pathlib.Path(opml_loc))
+            for opml_feed in opml_tree.getroot().iter('outline'):
+                subscribedFeeds.append(Feed(opml_feed.attrib['xmlUrl']))
+                print('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
 
     if args.feed:
         for arg_feed in args.feed:
