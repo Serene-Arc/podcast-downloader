@@ -28,9 +28,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
     parser.add_argument('--file', action='append', help='location of a file of feeds')
     parser.add_argument('-o', '--opml', help='location of an OPML file to load')
-    # parser.add_argument('-t', '--threads', type=int, default=3, help='number of concurrent downloads')
-    # parser.add_argument('-s', '--split-podcasts', action='store_true',
-    #                     help='flag to split the podcasts into different directories')
+    parser.add_argument('-t', '--threads', type=int, default=10, help='number of concurrent downloads')
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
 
     args = parser.parse_args()
@@ -92,7 +90,7 @@ if __name__ == "__main__":
         except PodcastException as e:
             print('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
 
-    pool = multiprocessing.Pool(10)
+    pool = multiprocessing.Pool(args.threads)
 
     # randomise the feed list, just so there's less chance of a slow group
     random.shuffle(subscribedFeeds)
