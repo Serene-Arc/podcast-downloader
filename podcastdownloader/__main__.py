@@ -9,18 +9,10 @@ from feed import Feed
 from episode import Episode, Status, PodcastException
 from stageprint import setstage, print, input
 import multiprocessing
-import logging
 import os
 import random
 
 parser = argparse.ArgumentParser()
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    filename='podcastdownloader.log',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.DEBUG)
-logging.getLogger(__name__).setLevel(logging.DEBUG)
 
 
 if __name__ == "__main__":
@@ -38,16 +30,13 @@ if __name__ == "__main__":
     if args.opml:
         opml_file = pathlib.Path(args.opml)
         opml_tree = et.parse(opml_file)
-        logger.info('Loading OPML file')
         for opml_feed in opml_tree.getroot().iter('outline'):
             subscribedFeeds.append(Feed(opml_feed.attrib['xmlUrl']))
             print('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
-            logging.debug('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
 
     if args.feed:
         for arg_feed in args.feed:
             subscribedFeeds.append(Feed(arg_feed))
-            logging.debug('Feed {} added'.format(arg_feed))
             print('Feed {} added'.format(arg_feed))
 
     if args.file:
