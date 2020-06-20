@@ -23,7 +23,7 @@ class Feed:
             print('Failed to get feed at {}'.format(self.url))
             return
 
-    def parseRSS(self, episode_limit, destination):
+    def parseRSS(self, episode_limit, destination, write_flag):
         self.__fetch_rss()
         self.feed = feedparser.parse(self.feed)
         self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
@@ -33,6 +33,11 @@ class Feed:
             episode_limit = len(self.feed['entries'])
         for entry in self.feed['entries'][:episode_limit]:
             self.feed_episodes.append(Episode(entry, self.title))
+
+        if write_flag:
+            with open(pathlib.Path(destination, self.title, 'episode_list.txt'), 'w') as file:
+                for entry in reversed(self.feed['entries']):
+                    file.write(entry['title'] + '\n')
 
         # if there's an exception in the feed from feedparser, then the entire
         # object becomes unpicklable and wont work with multiprocessing. it still
@@ -54,7 +59,7 @@ if __name__ == "__main__":
     destination = input('Enter a destination location: ')
 
     print('Getting feed...')
-    feed.parseRSS(-1, destination)
+    feed.parseRSS(-1, destination, True)
 
     existingFiles = []
     print('Scanning existing files...')

@@ -22,6 +22,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--opml', help='location of an OPML file to load')
     parser.add_argument('-t', '--threads', type=int, default=10, help='number of concurrent downloads')
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
+    parser.add_argument('-w', '--write-list', action='store_true', help='flag to write episode list')
 
     args = parser.parse_args()
     setstage('Loading')
@@ -55,7 +56,7 @@ if __name__ == "__main__":
 
     def readyFeed(in_feed):
         try:
-            in_feed.parseRSS(args.limit, args.destination)
+            in_feed.parseRSS(args.limit, args.destination, args.write_list)
         except KeyError as e:
             print('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
