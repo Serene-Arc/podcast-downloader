@@ -73,5 +73,5 @@ if __name__ == "__main__":
         if str(ep.path) in existingFiles:
             ep.status = Status.downloaded
         if ep.status == Status.pending:
-            # ep.downloadContent()
-            pass
+            ep.downloadContent()
+            ep.writeTags()
