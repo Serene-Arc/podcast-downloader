@@ -14,11 +14,18 @@ There are three arguments to be supplied to the program:
 - `--file` is the location of a simple text file with an RSS feed URL on each line
 - `-l, --limit` is the maximum number of episodes to try and download from the feed. If left blank, it is all episodes, but a small number is fastest for updating a feed
 - `-t, --threads` is the number of threads to run concurrently; defaults to 10
-- `-w, --write-list` is a flag to write a chronological list of episodes to the podcast destination
+- `-w, --write-list` is the option to write an ordered list of the episodes in the podcast in several different formats, as specified:
+	- `none`
+	- `text`
+	- `audacious`
 
 The `--feed`, `--file`, and `--opml` flags can all be specified multiple times to aggregate feeds from mutliple locations.
 
 Of these, only the destination is required, though one or more feeds or one or more OPML files must be provided or the program will just complete instantly.
+
+### Warnings
+
+The `--write-list` option should not be used with the `--limit` option. The limit option will be applied to the episode list in whatever format chosen, and this will overwrite any past episode list files. For example, if a `--limit` of 5 is chosen with `-w audacious`, then the exported Audacious playlist will only be 5 items long. Thus the `-w` option should only be used when there is not a limit.
 
 ## Example Command
 
