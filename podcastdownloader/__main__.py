@@ -34,6 +34,12 @@ if __name__ == "__main__":
         help='flag to write episode list')
 
     args = parser.parse_args()
+    if args.file:
+        args.file = [pathlib.Path(file).resolve() for file in args.file]
+    if args.opml:
+        args.opml = [pathlib.Path(file).resolve() for file in args.opml]
+    args.destination = pathlib.Path(args.destination).resolve()
+
     setstage('Loading')
     subscribedFeeds = []
 
