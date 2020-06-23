@@ -46,7 +46,8 @@ class Feed:
 
     def _makeDirectory(self, destination):
         try:
-            os.mkdir(pathlib.Path(destination, self.title))
+            self.directory = pathlib.Path(destination, self.title)
+            os.mkdir(self.directory)
         except FileExistsError:
             pass
 

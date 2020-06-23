@@ -11,6 +11,7 @@ from stageprint import setstage, print, input
 import multiprocessing
 import os
 import random
+import writer
 
 parser = argparse.ArgumentParser()
 
@@ -20,9 +21,17 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
     parser.add_argument('--file', action='append', help='location of a file of feeds')
     parser.add_argument('-o', '--opml', action='append', help='location of an OPML file to load')
-    parser.add_argument('-t', '--threads', type=int, default=10, help='number of concurrent downloads')
+    parser.add_argument('-t', '--threads', type=int, default=20, help='number of concurrent downloads')
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
-    parser.add_argument('-w', '--write-list', action='store_true', help='flag to write episode list')
+    parser.add_argument(
+        '-w',
+        '--write-list',
+        choices=[
+            'none',
+            'audacious',
+            'text'],
+        default='none',
+        help='flag to write episode list')
 
     args = parser.parse_args()
     setstage('Loading')
@@ -69,16 +78,16 @@ if __name__ == "__main__":
 
             if str(ep.path) in existingFiles:
                 ep.status = Status.downloaded
-
-            if ep.status == Status.pending:
-                ep.downloadContent()
-                try:
-                    ep.writeTags()
-                except PodcastException as e:
-                    print('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
-
         except PodcastException as e:
             print('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
+        return ep
+
+    def downloadEpisode(ep):
+        ep.downloadContent()
+        try:
+            ep.writeTags()
+        except PodcastException as e:
+            print('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
 
     pool = multiprocessing.Pool(args.threads)
 
@@ -91,8 +100,18 @@ if __name__ == "__main__":
     subscribedFeeds = list(tqdm(pool.imap_unordered(readyFeed, subscribedFeeds), total=len(subscribedFeeds)))
     subscribedFeeds = list(filter(None, subscribedFeeds))
 
-    episode_queue = [ep for feed in subscribedFeeds for ep in feed.feed_episodes]
-    print('{} episodes found'.format(len(episode_queue)))
+    print('Parsing feeds...')
+
+    for feed in tqdm(subscribedFeeds):
+        feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
+        if args.write_list == 'audacious':
+            writer.writeEpisodeAudacious(feed)
+        elif args.write_list == 'text':
+            writer.writeEpisodeText(feed)
+
+        episode_queue.extend([ep for ep in feed.feed_episodes if ep.status == Status.pending])
+
+    print('{} episodes to download'.format(len(episode_queue)))
 
     # randomise the list, if all the episodes from one server are close
     # together, then the server will start cutting off downloads. this should
@@ -100,7 +119,7 @@ if __name__ == "__main__":
     random.shuffle(episode_queue)
 
     setstage('Downloading')
-    list(tqdm(pool.imap_unordered(fillEpisode, episode_queue), total=len(episode_queue)))
+    list(tqdm(pool.imap_unordered(downloadEpisode, episode_queue), total=len(episode_queue)))
 
     pool.close()
     pool.join()
