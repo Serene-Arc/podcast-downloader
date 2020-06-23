@@ -21,7 +21,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
     parser.add_argument('--file', action='append', help='location of a file of feeds')
     parser.add_argument('-o', '--opml', action='append', help='location of an OPML file to load')
-    parser.add_argument('-t', '--threads', type=int, default=20, help='number of concurrent downloads')
+    parser.add_argument('-t', '--threads', type=int, default=10, help='number of concurrent downloads')
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
     parser.add_argument(
         '-w',

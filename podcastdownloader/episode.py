@@ -65,15 +65,14 @@ class Episode:
                 'No download link found for episode {} in podcast {}'.format(
                     self.title, self.podcast))
 
-        r = _rate_limited_request(self.download_link, True)
         if not self.file_type:
+            r = _rate_limited_request(self.download_link, True)
             self.file_type = r.headers['content-type']
+            r.close()
 
         self.published = self.feed_entry['published_parsed']
         self.id = self.feed_entry['id']
         self.status = Status.pending
-
-        r.close()
 
     def calcPath(self, dest_folder):
         intended_path = pathlib.Path(dest_folder, self.podcast)
