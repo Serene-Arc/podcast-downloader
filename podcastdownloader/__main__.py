@@ -6,7 +6,7 @@ import xml.etree.ElementTree as et
 import pathlib
 from tqdm import tqdm
 from feed import Feed
-from episode import Episode, Status, PodcastException
+from episode import Episode, Status, PodcastException, max_attempts
 import multiprocessing
 import os
 import random
@@ -41,6 +41,7 @@ if __name__ == "__main__":
         help='flag to write episode list')
     parser.add_argument('-s', '--suppress-progress', action='store_true')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='increase the verbosity')
+    parser.add_argument('--max-attempts', type=int, help='maximum nuimber of attempts to download file')
 
     args = parser.parse_args()
     if args.file:
@@ -53,6 +54,9 @@ if __name__ == "__main__":
         logger.setLevel(logging.INFO)
     elif args.verbose >= 1:
         logger.setLevel(logging.DEBUG)
+
+    if args.max_attempts:
+        max_attempts = args.max_attempts
 
     subscribedFeeds = []
 
