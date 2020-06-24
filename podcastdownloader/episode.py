@@ -70,8 +70,6 @@ class Episode:
             self.file_type = r.headers['content-type']
             r.close()
 
-        self.published = self.feed_entry['published_parsed']
-        self.id = self.feed_entry['id']
         self.status = Status.pending
 
     def calcPath(self, dest_folder):
