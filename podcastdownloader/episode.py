@@ -39,7 +39,7 @@ def _rate_limited_request(url: str, head_only: bool) -> Optional[requests.Respon
         except (requests.exceptions.ChunkedEncodingError,
                 requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout) as e:
-            if attempts >= max_attempts:
+            if attempts > max_attempts:
                 raise PodcastException('Connection was limited/refused: {}'.format(e))
             time.sleep(30 * attempts)
             attempts += 1
