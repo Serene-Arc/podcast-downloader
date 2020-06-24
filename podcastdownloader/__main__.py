@@ -78,6 +78,8 @@ if __name__ == "__main__":
     episode_queue = []
     existingFiles = []
 
+    logger.info('{} feeds to be downloaded'.format(len(subscribedFeeds)))
+
     logger.info('Scanning existing files...')
     for (dirpath, dirnames, filenames) in os.walk(args.destination):
         existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
