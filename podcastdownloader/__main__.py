@@ -23,7 +23,6 @@ if __name__ == "__main__":
     formatter = logging.Formatter('[%(asctime)s - %(levelname)s] - %(message)s')
     stream.setFormatter(formatter)
     logger.addHandler(stream)
-    logger.setLevel(logging.INFO)
 
     parser.add_argument('destination', help='directory to store downloads')
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
@@ -41,6 +40,7 @@ if __name__ == "__main__":
         default='none',
         help='flag to write episode list')
     parser.add_argument('-s', '--suppress-progress', action='store_true')
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='increase the verbosity')
 
     args = parser.parse_args()
     if args.file:
@@ -48,6 +48,11 @@ if __name__ == "__main__":
     if args.opml:
         args.opml = [pathlib.Path(file).resolve() for file in args.opml]
     args.destination = pathlib.Path(args.destination).resolve()
+
+    if args.verbose == 0:
+        logger.setLevel(logging.INFO)
+    elif args.verbose >= 1:
+        logger.setLevel(logging.DEBUG)
 
     subscribedFeeds = []
 
