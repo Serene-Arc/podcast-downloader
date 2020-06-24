@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     stream = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('[%(asctime)s - %(levelname)s] - %(message)s')
     stream.setFormatter(formatter)
     logger.addHandler(stream)
     logger.setLevel(logging.INFO)
@@ -40,6 +40,7 @@ if __name__ == "__main__":
             'text'],
         default='none',
         help='flag to write episode list')
+    parser.add_argument('-s', '--suppress-progress', action='store_true')
 
     args = parser.parse_args()
     if args.file:
@@ -113,12 +114,18 @@ if __name__ == "__main__":
 
     logger.info('Updating feeds...')
 
-    subscribedFeeds = list(tqdm(pool.imap_unordered(readyFeed, subscribedFeeds), total=len(subscribedFeeds)))
+    subscribedFeeds = list(
+        tqdm(
+            pool.imap_unordered(
+                readyFeed,
+                subscribedFeeds),
+            total=len(subscribedFeeds),
+            disable=args.suppress_progress))
     subscribedFeeds = list(filter(None, subscribedFeeds))
 
     logger.info('Parsing feeds...')
 
-    for feed in tqdm(subscribedFeeds):
+    for feed in tqdm(subscribedFeeds, disable=args.suppress_progress):
         feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
         if args.write_list == 'audacious':
             writer.writeEpisodeAudacious(feed)
@@ -134,8 +141,13 @@ if __name__ == "__main__":
     # limit/prevent that as much as possible to keep the average speed high
     random.shuffle(episode_queue)
 
-    setstage('Downloading')
-    list(tqdm(pool.imap_unordered(downloadEpisode, episode_queue), total=len(episode_queue)))
+    list(
+        tqdm(
+            pool.imap_unordered(
+                downloadEpisode,
+                episode_queue),
+            total=len(episode_queue),
+            disable=args.suppress_progress))
 
     pool.close()
     pool.join()
