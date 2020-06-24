@@ -7,16 +7,24 @@ import pathlib
 from tqdm import tqdm
 from feed import Feed
 from episode import Episode, Status, PodcastException
-from stageprint import setstage, print, input
 import multiprocessing
 import os
 import random
 import writer
+import logging
+import sys
 
 parser = argparse.ArgumentParser()
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
+    stream = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    stream.setFormatter(formatter)
+    logger.addHandler(stream)
+    logger.setLevel(logging.INFO)
+
     parser.add_argument('destination', help='directory to store downloads')
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
     parser.add_argument('--file', action='append', help='location of a file of feeds')
@@ -40,7 +48,6 @@ if __name__ == "__main__":
         args.opml = [pathlib.Path(file).resolve() for file in args.opml]
     args.destination = pathlib.Path(args.destination).resolve()
 
-    setstage('Loading')
     subscribedFeeds = []
 
     if args.opml:
@@ -48,24 +55,24 @@ if __name__ == "__main__":
             opml_tree = et.parse(pathlib.Path(opml_loc))
             for opml_feed in opml_tree.getroot().iter('outline'):
                 subscribedFeeds.append(Feed(opml_feed.attrib['xmlUrl']))
-                print('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
+                logger.info('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
 
     if args.feed:
         for arg_feed in args.feed:
             subscribedFeeds.append(Feed(arg_feed))
-            print('Feed {} added'.format(arg_feed))
+            logger.info('Feed {} added'.format(arg_feed))
 
     if args.file:
         for feed_file in args.file:
             with open(pathlib.Path(feed_file), 'r') as file:
                 for line in file.readlines():
                     subscribedFeeds.append(Feed(line.strip()))
-                    print('Feed {} added'.format(line.strip()))
+                    logger.info('Feed {} added'.format(line.strip()))
 
     episode_queue = []
     existingFiles = []
 
-    print('Scanning existing files...')
+    logger.info('Scanning existing files...')
     for (dirpath, dirnames, filenames) in os.walk(args.destination):
         existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
 
@@ -73,7 +80,7 @@ if __name__ == "__main__":
         try:
             in_feed.parseRSS(args.limit, args.destination, args.write_list)
         except KeyError as e:
-            print('Feed {} could not be parsed: {}'.format(in_feed.url, e))
+            logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
         return in_feed
 
@@ -85,32 +92,31 @@ if __name__ == "__main__":
             if str(ep.path) in existingFiles:
                 ep.status = Status.downloaded
         except PodcastException as e:
-            print('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
+            logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
         return ep
 
     def downloadEpisode(ep):
         try:
             ep.downloadContent()
         except PodcastException as e:
-            print('{} failed to download: {}'.format(ep.title, e))
+            logger.error('{} failed to download: {}'.format(ep.title, e))
 
         try:
             ep.writeTags()
         except PodcastException as e:
-            print('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
+            logger.warning('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
 
     pool = multiprocessing.Pool(args.threads)
 
     # randomise the feed list, just so there's less chance of a slow group
     random.shuffle(subscribedFeeds)
 
-    setstage('Updating')
-    print('Updating feeds...')
+    logger.info('Updating feeds...')
 
     subscribedFeeds = list(tqdm(pool.imap_unordered(readyFeed, subscribedFeeds), total=len(subscribedFeeds)))
     subscribedFeeds = list(filter(None, subscribedFeeds))
 
-    print('Parsing feeds...')
+    logger.info('Parsing feeds...')
 
     for feed in tqdm(subscribedFeeds):
         feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
@@ -121,7 +127,7 @@ if __name__ == "__main__":
 
         episode_queue.extend([ep for ep in feed.feed_episodes if ep.status == Status.pending])
 
-    print('{} episodes to download'.format(len(episode_queue)))
+    logger.info('{} episodes to download'.format(len(episode_queue)))
 
     # randomise the list, if all the episodes from one server are close
     # together, then the server will start cutting off downloads. this should
@@ -133,5 +139,3 @@ if __name__ == "__main__":
 
     pool.close()
     pool.join()
-    setstage('End')
-    print('Program complete!')
