@@ -89,7 +89,11 @@ if __name__ == "__main__":
         return ep
 
     def downloadEpisode(ep):
-        ep.downloadContent()
+        try:
+            ep.downloadContent()
+        except PodcastException as e:
+            print('{} failed to download: {}'.format(ep.title, e))
+
         try:
             ep.writeTags()
         except PodcastException as e:
