@@ -18,10 +18,21 @@ There are three arguments to be supplied to the program:
 	- `none`
 	- `text`
 	- `audacious`
+- `-s, --suppres-progress` will disable all progress bars
+- `-v, --verbose` will increase the verbosity of the information output to the console
+- `--max-attempts` will specify the number of reattempts for a failed or refused connection. See below for more details.
 
-The `--feed`, `--file`, and `--opml` flags can all be specified multiple times to aggregate feeds from mutliple locations.
+The `--feed`, `--file`, and `--opml` flags can all be specified multiple times to aggregate feeds from multiple locations.
 
 Of these, only the destination is required, though one or more feeds or one or more OPML files must be provided or the program will just complete instantly.
+
+### Maximum Reattempts
+
+In some cases, particularly when downloading a single or a few specific podcasts with a lot of episodes at once, the remote server will receive a number of simultaneous or consecutive requests. As this may appear to be atypical behaviour, this server may refuse or close incoming connections as a rate-limiting measure. This is normal in scraping servers that do not want to be scraped. 
+
+There are several countermeasures in the downloader for this behaviour, such as randomising the download list to avoid repeated calls to the same server in a short amount of time, but this may not work if there is only one or a few podcast feeds to download. As such, the method of last resort is a sleep function to wait until the server allows the download to continue. This is done with increasing increments of 30 seconds, with the maximum number or reattempts specified by the `--max-attempts` argument. For example, if left at the default of 10, the program will sleep for 30 seconds if the connection is refused. Then, if it was refused again, it will sleep for 60 before reattempting the download. It will do this until the 10th attempt, where it will sleep for 300 seconds, or five minutes. If the connection is refused after this, then an error will occur and the download thread will move on to the next podcast episode. 
+
+The maximum number of reattempts may need to be changed in several cases. If you wish to download the episode regardless of anything else, then you may want to increase the argument. This may result in longer wait times for the downloads to complete. However, a low argument will make the program skip downloads if they time out repeatedly, missing content but completing faster.
 
 ### Warnings
 
