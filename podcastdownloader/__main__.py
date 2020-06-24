@@ -56,19 +56,19 @@ if __name__ == "__main__":
             opml_tree = et.parse(pathlib.Path(opml_loc))
             for opml_feed in opml_tree.getroot().iter('outline'):
                 subscribedFeeds.append(Feed(opml_feed.attrib['xmlUrl']))
-                logger.info('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
+                logger.debug('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
 
     if args.feed:
         for arg_feed in args.feed:
             subscribedFeeds.append(Feed(arg_feed))
-            logger.info('Feed {} added'.format(arg_feed))
+            logger.debug('Feed {} added'.format(arg_feed))
 
     if args.file:
         for feed_file in args.file:
             with open(pathlib.Path(feed_file), 'r') as file:
                 for line in file.readlines():
                     subscribedFeeds.append(Feed(line.strip()))
-                    logger.info('Feed {} added'.format(line.strip()))
+                    logger.debug('Feed {} added'.format(line.strip()))
 
     episode_queue = []
     existingFiles = []
