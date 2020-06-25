@@ -55,8 +55,10 @@ if __name__ == "__main__":
 
     if args.verbose == 0:
         logger.setLevel(logging.INFO)
-    elif args.verbose >= 1:
+    elif args.verbose == 1:
         logger.setLevel(logging.DEBUG)
+    elif args.verbose >= 2:
+        logger.setLevel(9)
 
     if args.max_attempts:
         episode.max_attempts = args.max_attempts
@@ -94,6 +96,7 @@ if __name__ == "__main__":
     def readyFeed(in_feed):
         try:
             in_feed.parseRSS(args.limit, args.destination, args.write_list)
+            logger.log(9, 'Feed {} parsed'.format(in_feed.title))
         except KeyError as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
@@ -102,10 +105,11 @@ if __name__ == "__main__":
     def fillEpisode(ep):
         try:
             ep.parseRSSEntry()
+            logger.log(9, 'Episode {} parsed'.format(ep.title))
             ep.calcPath(args.destination)
-
             if str(ep.path) in existingFiles:
                 ep.status = episode.Status.downloaded
+
         except episode.PodcastException as e:
             logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
         return ep
@@ -113,6 +117,7 @@ if __name__ == "__main__":
     def downloadEpisode(ep):
         try:
             ep.downloadContent()
+            logger.log(9, 'Episode {} downloaded'.format(ep.title))
         except episode.PodcastException as e:
             logger.error('{} failed to download: {}'.format(ep.title, e))
 
