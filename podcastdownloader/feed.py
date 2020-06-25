@@ -3,7 +3,7 @@
 '''Class for feeds'''
 
 import feedparser
-from episode import Episode, PodcastException, Status
+from podcastdownloader.episode import Episode, PodcastException, Status
 import requests
 import requests.exceptions
 import os

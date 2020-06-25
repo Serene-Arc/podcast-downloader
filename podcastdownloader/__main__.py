@@ -5,12 +5,12 @@ import argparse
 import xml.etree.ElementTree as et
 import pathlib
 from tqdm import tqdm
-from feed import Feed
-from episode import Episode, Status, PodcastException, max_attempts
+from podcastdownloader.feed import Feed
+from podcastdownloader.episode import Episode, Status, PodcastException, max_attempts
 import multiprocessing
 import os
 import random
-import writer
+import podcastdownloader.writer
 import logging
 import sys
 
