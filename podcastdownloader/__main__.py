@@ -1,18 +1,20 @@
 #!/bin/usr/env python3
 
-import configparser
 import argparse
-import xml.etree.ElementTree as et
-import pathlib
-from tqdm import tqdm
-from podcastdownloader.feed import Feed
-from podcastdownloader.episode import Episode, Status, PodcastException, max_attempts
+import configparser
+import logging
 import multiprocessing
 import os
+import pathlib
 import random
-import podcastdownloader.writer
-import logging
 import sys
+import xml.etree.ElementTree as et
+
+from tqdm import tqdm
+
+import podcastdownloader.writer
+from podcastdownloader.episode import (Episode, PodcastException, Status, max_attempts)
+from podcastdownloader.feed import Feed
 
 parser = argparse.ArgumentParser()
 

@@ -2,12 +2,14 @@
 
 '''Class for feeds'''
 
-import feedparser
-from podcastdownloader.episode import Episode, PodcastException, Status
-import requests
-import requests.exceptions
 import os
 import pathlib
+
+import feedparser
+import requests
+import requests.exceptions
+
+from podcastdownloader.episode import Episode, PodcastException, Status
 
 
 class Feed:

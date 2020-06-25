@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-import time
-from typing import Dict
-from enum import Enum
-import re
 import os
 import pathlib
-import requests
-import requests.exceptions
+import re
+import time
+from enum import Enum
+from typing import Dict, Optional
+
 import mutagen
 import mutagen.easyid3
-from typing import Optional
+import requests
+import requests.exceptions
 
 
 class Status(Enum):
