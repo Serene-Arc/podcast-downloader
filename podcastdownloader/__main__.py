@@ -12,8 +12,9 @@ import xml.etree.ElementTree as et
 
 from tqdm import tqdm
 
-import podcastdownloader.writer
-from podcastdownloader.episode import (Episode, PodcastException, Status, max_attempts)
+import podcastdownloader.writer as writer
+# from podcastdownloader.episode import (Episode, PodcastException, Status, max_attempts)
+import podcastdownloader.episode as episode
 from podcastdownloader.feed import Feed
 
 parser = argparse.ArgumentParser()
@@ -58,7 +59,7 @@ if __name__ == "__main__":
         logger.setLevel(logging.DEBUG)
 
     if args.max_attempts:
-        max_attempts = args.max_attempts
+        episode.max_attempts = args.max_attempts
 
     subscribedFeeds = []
 
@@ -104,20 +105,20 @@ if __name__ == "__main__":
             ep.calcPath(args.destination)
 
             if str(ep.path) in existingFiles:
-                ep.status = Status.downloaded
-        except PodcastException as e:
+                ep.status = episode.Status.downloaded
+        except episode.PodcastException as e:
             logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
         return ep
 
     def downloadEpisode(ep):
         try:
             ep.downloadContent()
-        except PodcastException as e:
+        except episode.PodcastException as e:
             logger.error('{} failed to download: {}'.format(ep.title, e))
 
         try:
             ep.writeTags()
-        except PodcastException as e:
+        except episode.PodcastException as e:
             logger.warning('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
 
     pool = multiprocessing.Pool(args.threads)
@@ -140,12 +141,8 @@ if __name__ == "__main__":
 
     for feed in tqdm(subscribedFeeds, disable=args.suppress_progress):
         feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
-        if args.write_list == 'audacious':
-            writer.writeEpisodeAudacious(feed)
-        elif args.write_list == 'text':
-            writer.writeEpisodeText(feed)
-
-        episode_queue.extend([ep for ep in feed.feed_episodes if ep.status == Status.pending])
+        writer.writeEpisode(feed, args.write_list)
+        episode_queue.extend([ep for ep in feed.feed_episodes if ep.status == episode.Status.pending])
 
     logger.info('{} episodes to download'.format(len(episode_queue)))
 

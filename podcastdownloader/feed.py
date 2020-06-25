@@ -30,23 +30,18 @@ class Feed:
         self.feed = feedparser.parse(self.feed)
         self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
 
-        self._makeDirectory(destination)
+        self.__makeDirectory(destination)
         if episode_limit == -1:
             episode_limit = len(self.feed['entries'])
         for entry in self.feed['entries'][:episode_limit]:
             self.feed_episodes.append(Episode(entry, self.title))
-
-        if write_flag:
-            with open(pathlib.Path(destination, self.title, 'episode_list.txt'), 'w') as file:
-                for entry in reversed(self.feed['entries']):
-                    file.write(entry['title'] + '\n')
 
         # if there's an exception in the feed from feedparser, then the entire
         # object becomes unpicklable and wont work with multiprocessing. it still
         # seems to get the episodes most of the time so easier to wipe it
         self.feed = None
 
-    def _makeDirectory(self, destination):
+    def __makeDirectory(self, destination):
         try:
             self.directory = pathlib.Path(destination, self.title)
             os.mkdir(self.directory)
