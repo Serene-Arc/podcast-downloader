@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 import podcastdownloader.episode as episode
 import podcastdownloader.writer as writer
-from podcastdownloader.exceptions import FeedException
+from podcastdownloader.exceptions import FeedException, EpisodeException
 from podcastdownloader.feed import Feed
 
 parser = argparse.ArgumentParser()
@@ -111,7 +111,7 @@ if __name__ == "__main__":
             if str(ep.path) in existingFiles:
                 ep.status = episode.Status.downloaded
 
-        except episode.PodcastException as e:
+        except EpisodeException as e:
             logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
         return ep
 
