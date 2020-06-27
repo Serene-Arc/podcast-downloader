@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
 
-class FeedException(Exception):
+class PodcastException(Exception):
     pass
 
 
-class PodcastException(Exception):
+class FeedException(PodcastException):
+    pass
+
+
+class EpisodeException(PodcastException):
     pass

@@ -12,7 +12,7 @@ import mutagen.easyid3
 import requests
 import requests.exceptions
 
-from podcastdownloader.exceptions import PodcastException
+from podcastdownloader.exceptions import EpisodeException
 
 
 class Status(Enum):
@@ -38,7 +38,7 @@ def _rate_limited_request(url: str, head_only: bool) -> Optional[requests.Respon
                 requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout) as e:
             if attempts > max_attempts:
-                raise PodcastException('Connection was limited/refused: {}'.format(e))
+                raise EpisodeException('Connection was limited/refused: {}'.format(e))
             time.sleep(30 * attempts)
             attempts += 1
 
@@ -63,7 +63,7 @@ class Episode:
             self.file_type = None
 
         if not self.download_link:
-            raise PodcastException(
+            raise EpisodeException(
                 'No download link found for episode {} in podcast {}'.format(
                     self.title, self.podcast))
 
@@ -82,7 +82,7 @@ class Episode:
         elif self.file_type == 'audio/mpeg' or self.file_type == 'audio/mp3':
             self.path = pathlib.Path(intended_path, self.title + '.mp3')
         if self.path is None:
-            raise PodcastException('Cannot determine filename with codec {}'.format(self.file_type))
+            raise EpisodeException('Cannot determine filename with codec {}'.format(self.file_type))
 
     def checkExistence(self):
         if os.path.exists(self.path) is True:
@@ -108,4 +108,4 @@ class Episode:
             tag_file.save()
 
         except mutagen.MutagenError as e:
-            raise PodcastException('Mutagen failed to write the tags: {}'.format(e))
+            raise EpisodeException('Mutagen failed to write the tags: {}'.format(e))
