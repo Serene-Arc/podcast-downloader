@@ -21,7 +21,10 @@ class Feed:
 
     def __fetch_rss(self):
         try:
-            self.feed = requests.get(self.url, timeout=120).text
+            response = requests.get(self.url, timeout=120)
+            if response.status_code != 200:
+                raise FeedException('Failed to download feed with status: {}'.format(response.status_code))
+            self.feed = response.content
         except requests.exceptions.Timeout:
             raise FeedException('Failed to get feed at {}'.format(self.url))
             return
