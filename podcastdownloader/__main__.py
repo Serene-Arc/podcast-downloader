@@ -12,9 +12,10 @@ import xml.etree.ElementTree as et
 
 from tqdm import tqdm
 
-import podcastdownloader.writer as writer
 import podcastdownloader.episode as episode
-from podcastdownloader.feed import Feed, FeedException
+import podcastdownloader.writer as writer
+from podcastdownloader.exceptions import FeedException
+from podcastdownloader.feed import Feed
 
 parser = argparse.ArgumentParser()
 

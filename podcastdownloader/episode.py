@@ -12,15 +12,13 @@ import mutagen.easyid3
 import requests
 import requests.exceptions
 
+from podcastdownloader.exceptions import PodcastException
+
 
 class Status(Enum):
     blank = 0
     pending = 1
     downloaded = 2
-
-
-class PodcastException(Exception):
-    pass
 
 
 max_attempts = 10

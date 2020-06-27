@@ -9,11 +9,8 @@ import feedparser
 import requests
 import requests.exceptions
 
-from podcastdownloader.episode import Episode, PodcastException, Status
-
-
-class FeedException(Exception):
-    pass
+from podcastdownloader.episode import Episode, Status
+from podcastdownloader.exceptions import FeedException
 
 
 class Feed:
