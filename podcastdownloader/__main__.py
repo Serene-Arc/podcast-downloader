@@ -98,7 +98,7 @@ if __name__ == "__main__":
         try:
             in_feed.parseRSS(args.limit, args.destination, args.write_list)
             logger.log(9, 'Feed {} parsed'.format(in_feed.title))
-        except FeedException as e:
+        except (FeedException, KeyError) as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
         return in_feed
