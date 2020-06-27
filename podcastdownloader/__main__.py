@@ -13,9 +13,8 @@ import xml.etree.ElementTree as et
 from tqdm import tqdm
 
 import podcastdownloader.writer as writer
-# from podcastdownloader.episode import (Episode, PodcastException, Status, max_attempts)
 import podcastdownloader.episode as episode
-from podcastdownloader.feed import Feed
+from podcastdownloader.feed import Feed, FeedException
 
 parser = argparse.ArgumentParser()
 
@@ -98,7 +97,7 @@ if __name__ == "__main__":
         try:
             in_feed.parseRSS(args.limit, args.destination, args.write_list)
             logger.log(9, 'Feed {} parsed'.format(in_feed.title))
-        except KeyError as e:
+        except FeedException as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
         return in_feed

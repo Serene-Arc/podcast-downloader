@@ -12,6 +12,10 @@ import requests.exceptions
 from podcastdownloader.episode import Episode, PodcastException, Status
 
 
+class FeedException(Exception):
+    pass
+
+
 class Feed:
     def __init__(self, url: str):
         self.url = url
@@ -22,7 +26,7 @@ class Feed:
         try:
             self.feed = requests.get(self.url, timeout=120).text
         except requests.exceptions.Timeout:
-            print('Failed to get feed at {}'.format(self.url))
+            raise FeedException('Failed to get feed at {}'.format(self.url))
             return
 
     def parseRSS(self, episode_limit, destination, write_flag):
