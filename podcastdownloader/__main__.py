@@ -81,7 +81,7 @@ if __name__ == "__main__":
         for feed_file in args.file:
             with open(pathlib.Path(feed_file), 'r') as file:
                 for line in file.readlines():
-                    if not line.startswith('#'):
+                    if line != '\n' and not line.startswith('#'):
                         subscribedFeeds.append(Feed(line.strip()))
                         logger.debug('Feed {} added'.format(line.strip()))
 
