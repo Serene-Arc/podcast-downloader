@@ -18,7 +18,7 @@ There are three arguments to be supplied to the program:
 	- `none`
 	- `text`
 	- `audacious`
-- `-s, --suppres-progress` will disable all progress bars
+- `-s, --suppress-progress` will disable all progress bars
 - `-v, --verbose` will increase the verbosity of the information output to the console
 - `--max-attempts` will specify the number of reattempts for a failed or refused connection. See below for more details.
 - `--skip-download` will do everything but download the files. Useful for updating episode playlists without a lengthy download.
