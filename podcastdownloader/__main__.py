@@ -122,12 +122,12 @@ if __name__ == "__main__":
         try:
             ep.downloadContent()
             logger.log(9, 'Episode {} downloaded'.format(ep.title))
-        except episode.PodcastException as e:
+        except episode.EpisodeException as e:
             logger.error('{} failed to download: {}'.format(ep.title, e))
 
         try:
             ep.writeTags()
-        except episode.PodcastException as e:
+        except episode.EpisodeException as e:
             logger.warning('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
 
     pool = multiprocessing.Pool(args.threads)
