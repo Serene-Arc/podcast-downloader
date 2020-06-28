@@ -41,6 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--suppress-progress', action='store_true')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='increase the verbosity')
     parser.add_argument('--max-attempts', type=int, help='maximum nuimber of attempts to download file')
+    parser.add_argument('--skip-download', action='store_true', help='skips the download of episodes')
 
     args = parser.parse_args()
 
@@ -151,18 +152,19 @@ if __name__ == "__main__":
         writer.writeEpisode(feed, args.write_list)
         episode_queue.extend([ep for ep in feed.feed_episodes if ep.status == episode.Status.pending])
 
-    logger.info('{} episodes to download'.format(len(episode_queue)))
+    if not args.skip_download:
+        logger.info('{} episodes to download'.format(len(episode_queue)))
 
-    # randomise the list, if all the episodes from one server are close
-    # together, then the server will start cutting off downloads. this should
-    # limit/prevent that as much as possible to keep the average speed high
-    random.shuffle(episode_queue)
+        # randomise the list, if all the episodes from one server are close
+        # together, then the server will start cutting off downloads. this should
+        # limit/prevent that as much as possible to keep the average speed high
+        random.shuffle(episode_queue)
 
-    list(tqdm(pool.imap_unordered(
-        downloadEpisode,
-        episode_queue),
-        total=len(episode_queue),
-        disable=args.suppress_progress))
+        list(tqdm(pool.imap_unordered(
+            downloadEpisode,
+            episode_queue),
+            total=len(episode_queue),
+            disable=args.suppress_progress))
 
     pool.close()
     pool.join()
