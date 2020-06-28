@@ -56,7 +56,9 @@ if __name__ == "__main__":
     destination = input('Enter a destination location: ')
 
     print('Getting feed...')
-    feed.fetchRSS(-1, destination, True)
+    feed.fetchRSS()
+    feed.makeDirectory(destination)
+    feed.extractEpisodes(-1)
 
     existingFiles = []
     print('Scanning existing files...')
