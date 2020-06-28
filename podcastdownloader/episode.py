@@ -35,9 +35,7 @@ def _rate_limited_request(url: str, head_only: bool) -> requests.Response:
                 response = requests.get(url, timeout=180, allow_redirects=True)
             return response
 
-        except (requests.exceptions.ChunkedEncodingError,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout) as e:
+        except requests.exceptions.RequestException as e:
             if attempts > max_attempts:
                 raise EpisodeException('Connection was limited/refused: {}'.format(e))
             time.sleep(30 * attempts)
