@@ -65,6 +65,9 @@ class Episode:
             self.download_link = self.feed_entry['link']
             self.file_type = None
 
+        else:
+            self.download_link = None
+
         if not self.download_link:
             raise EpisodeException(
                 'No download link found for episode {} in podcast {}'.format(
