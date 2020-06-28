@@ -19,7 +19,7 @@ class Feed:
         self.feed_episodes = []
         self.downloaded_episodes = []
 
-    def __fetch_rss(self):
+    def __download_rss(self):
         try:
             response = requests.get(self.url, timeout=120)
             if response.status_code != 200:
@@ -29,23 +29,18 @@ class Feed:
             raise FeedException('Failed to get feed at {}'.format(self.url))
             return
 
-    def parseRSS(self, episode_limit, destination, write_flag):
-        self.__fetch_rss()
+    def fetchRSS(self):
+        self.__download_rss()
         self.feed = feedparser.parse(self.feed)
         self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
 
-        self.__makeDirectory(destination)
+    def extractEpisodes(self, episode_limit):
         if episode_limit == -1:
             episode_limit = len(self.feed['entries'])
         for entry in self.feed['entries'][:episode_limit]:
             self.feed_episodes.append(Episode(entry, self.title))
 
-        # if there's an exception in the feed from feedparser, then the entire
-        # object becomes unpicklable and wont work with multiprocessing. it still
-        # seems to get the episodes most of the time so easier to wipe it
-        self.feed = None
-
-    def __makeDirectory(self, destination):
+    def makeDirectory(self, destination):
         try:
             self.directory = pathlib.Path(destination, self.title)
             os.mkdir(self.directory)
@@ -61,7 +56,7 @@ if __name__ == "__main__":
     destination = input('Enter a destination location: ')
 
     print('Getting feed...')
-    feed.parseRSS(-1, destination, True)
+    feed.fetchRSS(-1, destination, True)
 
     existingFiles = []
     print('Scanning existing files...')

@@ -96,7 +96,10 @@ if __name__ == "__main__":
 
     def readyFeed(in_feed):
         try:
-            in_feed.parseRSS(args.limit, args.destination, args.write_list)
+            in_feed.fetchRSS()
+            in_feed.makeDirectory(args.destination)
+            in_feed.extractEpisodes(args.limit)
+            in_feed.feed = None
             logger.log(9, 'Feed {} parsed'.format(in_feed.title))
         except (FeedException, KeyError) as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
