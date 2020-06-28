@@ -34,6 +34,7 @@ def _rate_limited_request(url: str, head_only: bool) -> requests.Response:
             else:
                 response = requests.get(url, timeout=180, allow_redirects=True)
             return response
+
         except (requests.exceptions.ChunkedEncodingError,
                 requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout) as e:
@@ -52,12 +53,14 @@ class Episode:
 
     def parseRSSEntry(self):
         self.title = re.sub(r'(/|\0)', '', self.feed_entry['title'])
+
         if 'links' in self.feed_entry:
             for link in self.feed_entry['links']:
                 if re.match('audio*', link['type']):
                     self.download_link = link['href']
                     self.file_type = link['type']
                     break
+
         elif 'link' in self.feed_entry:
             self.download_link = self.feed_entry['link']
             self.file_type = None
@@ -77,10 +80,12 @@ class Episode:
     def calcPath(self, dest_folder: pathlib.Path):
         intended_path = pathlib.Path(dest_folder, self.podcast)
         self.path = None
+
         if self.file_type == 'audio/mp4' or self.file_type == 'audio/x-m4a':
             self.path = pathlib.Path(intended_path, self.title + '.m4a')
         elif self.file_type == 'audio/mpeg' or self.file_type == 'audio/mp3':
             self.path = pathlib.Path(intended_path, self.title + '.mp3')
+
         if self.path is None:
             raise EpisodeException('Cannot determine filename with codec {}'.format(self.file_type))
 

@@ -34,12 +34,8 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--threads', type=int, default=10, help='number of concurrent downloads')
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
     parser.add_argument(
-        '-w',
-        '--write-list',
-        choices=[
-            'none',
-            'audacious',
-            'text'],
+        '-w', '--write-list',
+        choices=['none', 'audacious', 'text'],
         default='none',
         help='flag to write episode list')
     parser.add_argument('-s', '--suppress-progress', action='store_true')
@@ -47,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('--max-attempts', type=int, help='maximum nuimber of attempts to download file')
 
     args = parser.parse_args()
+
     if args.file:
         args.file = [pathlib.Path(file).resolve() for file in args.file]
     if args.opml:
@@ -100,16 +97,19 @@ if __name__ == "__main__":
             in_feed.makeDirectory(args.destination)
             in_feed.extractEpisodes(args.limit)
             logger.log(9, 'Feed {} parsed'.format(in_feed.title))
+
         except (FeedException, KeyError) as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
             return None
+
         return in_feed
 
     def fillEpisode(ep: episode.Episode) -> episode.Episode:
         try:
             ep.parseRSSEntry()
-            logger.log(9, 'Episode {} parsed'.format(ep.title))
             ep.calcPath(args.destination)
+            logger.log(9, 'Episode {} parsed'.format(ep.title))
+
             if str(ep.path) in existingFiles:
                 ep.status = episode.Status.downloaded
 
@@ -137,10 +137,9 @@ if __name__ == "__main__":
     logger.info('Updating feeds...')
 
     subscribedFeeds = list(
-        tqdm(
-            pool.imap_unordered(
-                readyFeed,
-                subscribedFeeds),
+        tqdm(pool.imap_unordered(
+            readyFeed,
+            subscribedFeeds),
             total=len(subscribedFeeds),
             disable=args.suppress_progress))
     subscribedFeeds = list(filter(None, subscribedFeeds))
@@ -159,13 +158,11 @@ if __name__ == "__main__":
     # limit/prevent that as much as possible to keep the average speed high
     random.shuffle(episode_queue)
 
-    list(
-        tqdm(
-            pool.imap_unordered(
-                downloadEpisode,
-                episode_queue),
-            total=len(episode_queue),
-            disable=args.suppress_progress))
+    list(tqdm(pool.imap_unordered(
+        downloadEpisode,
+        episode_queue),
+        total=len(episode_queue),
+        disable=args.suppress_progress))
 
     pool.close()
     pool.join()
