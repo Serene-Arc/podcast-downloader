@@ -94,7 +94,7 @@ if __name__ == "__main__":
     for (dirpath, dirnames, filenames) in os.walk(args.destination):
         existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
 
-    def readyFeed(in_feed):
+    def readyFeed(in_feed: Feed) -> Feed:
         try:
             in_feed.fetchRSS()
             in_feed.makeDirectory(args.destination)
@@ -105,7 +105,7 @@ if __name__ == "__main__":
             return None
         return in_feed
 
-    def fillEpisode(ep):
+    def fillEpisode(ep: episode.Episode) -> episode.Episode:
         try:
             ep.parseRSSEntry()
             logger.log(9, 'Episode {} parsed'.format(ep.title))
@@ -117,7 +117,7 @@ if __name__ == "__main__":
             logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
         return ep
 
-    def downloadEpisode(ep):
+    def downloadEpisode(ep: episode.Episode):
         try:
             ep.downloadContent()
             logger.log(9, 'Episode {} downloaded'.format(ep.title))

@@ -34,13 +34,13 @@ class Feed:
         self.feed = feedparser.parse(self.feed)
         self.title = self.feed['feed']['title'].encode('utf-8').decode('ascii', 'ignore')
 
-    def extractEpisodes(self, episode_limit):
+    def extractEpisodes(self, episode_limit: int):
         if episode_limit == -1:
             episode_limit = len(self.feed['entries'])
         for entry in self.feed['entries'][:episode_limit]:
             self.feed_episodes.append(Episode(entry, self.title))
 
-    def makeDirectory(self, destination):
+    def makeDirectory(self, destination: pathlib.Path):
         try:
             self.directory = pathlib.Path(destination, self.title)
             os.mkdir(self.directory)

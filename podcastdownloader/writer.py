@@ -2,8 +2,10 @@
 
 import pathlib
 
+import podcastdownloader.feed as feed
 
-def __writeAudacious(feed):
+
+def __writeAudacious(feed: feed.Feed):
     with open(pathlib.Path(feed.directory, 'episode_playlist.audpl'), 'w') as file:
         file.write('title={}\n'.format(feed.title).replace(' ', '%20'))
         for episode in reversed(feed.feed_episodes):
@@ -14,13 +16,13 @@ def __writeAudacious(feed):
                 pass
 
 
-def __writeText(feed):
+def __writeText(feed: feed.Feed):
     with open(pathlib.Path(feed.directory, 'episode_list.txt'), 'w') as file:
         for entry in reversed(feed.episode_list):
             file.write(entry.title + '\n')
 
 
-def writeEpisode(feed, write_choice):
+def writeEpisode(feed: feed.Feed, write_choice: str):
     if write_choice == 'audacious':
         __writeAudacious(feed)
     elif write_choice == 'text':

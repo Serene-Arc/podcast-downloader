@@ -24,7 +24,7 @@ class Status(Enum):
 max_attempts = 10
 
 
-def _rate_limited_request(url: str, head_only: bool) -> Optional[requests.Response]:
+def _rate_limited_request(url: str, head_only: bool) -> requests.Response:
     attempts = 1
     global max_attempts
     while True:
@@ -74,7 +74,7 @@ class Episode:
 
         self.status = Status.pending
 
-    def calcPath(self, dest_folder):
+    def calcPath(self, dest_folder: pathlib.Path):
         intended_path = pathlib.Path(dest_folder, self.podcast)
         self.path = None
         if self.file_type == 'audio/mp4' or self.file_type == 'audio/x-m4a':
