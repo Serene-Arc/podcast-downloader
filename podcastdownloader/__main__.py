@@ -144,7 +144,7 @@ if __name__ == "__main__":
             disable=args.suppress_progress))
     subscribedFeeds = list(filter(None, subscribedFeeds))
 
-    logger.info('Parsing feeds...')
+    logger.info('Parsing episodes...')
 
     for feed in tqdm(subscribedFeeds, disable=args.suppress_progress):
         feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
