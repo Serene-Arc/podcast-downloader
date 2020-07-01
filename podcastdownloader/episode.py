@@ -3,6 +3,7 @@
 import os
 import pathlib
 import re
+import ssl
 import time
 from enum import Enum
 from typing import Dict, Optional
@@ -36,7 +37,7 @@ def _rate_limited_request(url: str, head_only: bool) -> requests.Response:
                 response = requests.get(url, timeout=180, allow_redirects=True)
             return response
 
-        except requests.exceptions.RequestException as e:
+        except (requests.exceptions.RequestException, ssl.SSLError) as e:
             if attempts > max_attempts:
                 raise EpisodeException('Connection was limited/refused: {}'.format(e))
             time.sleep(30 * attempts)
