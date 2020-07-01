@@ -97,7 +97,7 @@ if __name__ == "__main__":
             in_feed.fetchRSS()
             in_feed.makeDirectory(args.destination)
             in_feed.extractEpisodes(args.limit)
-            logger.log(9, 'Feed {} parsed'.format(in_feed.title))
+            logger.debug('Feed {} parsed'.format(in_feed.title))
 
         except (FeedException, KeyError) as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     def downloadEpisode(ep: episode.Episode):
         try:
             ep.downloadContent()
-            logger.log(9, 'Episode {} downloaded'.format(ep.title))
+            logger.debug('Episode {} downloaded'.format(ep.title))
             try:
                 ep.writeTags()
             except episode.EpisodeException as e:
