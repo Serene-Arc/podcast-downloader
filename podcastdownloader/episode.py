@@ -25,6 +25,7 @@ max_attempts = 10
 
 
 def _rate_limited_request(url: str, head_only: bool) -> requests.Response:
+    url = url.strip()
     attempts = 1
     global max_attempts
     while True:
