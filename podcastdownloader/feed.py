@@ -41,11 +41,9 @@ class Feed:
             self.feed_episodes.append(Episode(entry, self.title))
 
     def makeDirectory(self, destination: pathlib.Path):
-        try:
-            self.directory = pathlib.Path(destination, self.title)
+        self.directory = pathlib.Path(destination, self.title)
+        if not self.directory.exists():
             os.mkdir(self.directory)
-        except FileExistsError:
-            pass
 
 
 if __name__ == "__main__":
@@ -71,6 +69,7 @@ if __name__ == "__main__":
         ep.calcPath(destination)
         if str(ep.path) in existingFiles:
             ep.status = Status.downloaded
+            ep.verifyDownload()
         if ep.status == Status.pending:
             ep.downloadContent()
             ep.writeTags()

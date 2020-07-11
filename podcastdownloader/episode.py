@@ -20,6 +20,7 @@ class Status(Enum):
     blank = 0
     pending = 1
     downloaded = 2
+    corrupted = 3
 
 
 max_attempts = 10
@@ -50,6 +51,7 @@ class Episode:
         self.podcast = podcast
         self.status = Status.blank
         self.download_link = None
+        self.size = None
 
     def parseRSSEntry(self):
         self.title = re.sub(r'(/|\0)', '', self.feed_entry['title'])
@@ -91,6 +93,16 @@ class Episode:
 
         if self.path is None:
             raise EpisodeException('Cannot determine filename with codec {}'.format(self.file_type))
+
+    def _get_download_size(self):
+        r = _rate_limited_request(self.download_link, True)
+        self.size = int(r.headers['content-length'])
+
+    def verifyDownload(self):
+        self._get_download_size()
+        if self.path.exists():
+            if self.path.stat().st_size != self.size:
+                self.status = Status.corrupted
 
     def checkExistence(self):
         if os.path.exists(self.path) is True:

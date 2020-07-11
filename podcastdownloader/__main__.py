@@ -41,7 +41,9 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--suppress-progress', action='store_true')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='increase the verbosity')
     parser.add_argument('--max-attempts', type=int, help='maximum nuimber of attempts to download file')
-    parser.add_argument('--skip-download', action='store_true', help='skips the download of episodes')
+    download_alternates = parser.add_mutually_exclusive_group()
+    download_alternates.add_argument('--skip-download', action='store_true', help='skips the download of episodes')
+    download_alternates.add_argument('--verify', action='store_true', help='verify all downloaded files')
 
     args = parser.parse_args()
 
@@ -129,6 +131,13 @@ if __name__ == "__main__":
         except episode.EpisodeException as e:
             logger.error('{} failed to download: {}'.format(ep.title, e))
 
+    def check_episode(ep: episode.Episode) -> episode.Episode:
+        try:
+            ep.verifyDownload()
+        except KeyError:
+            logger.error('Episode {} in podcast {} could not be checked'.format(ep.title, ep.podcast))
+        return ep
+
     pool = multiprocessing.Pool(args.threads)
 
     # randomise the feed list, just so there's less chance of a slow group
@@ -149,10 +158,34 @@ if __name__ == "__main__":
     for feed in tqdm(subscribedFeeds, disable=args.suppress_progress):
         feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
         writer.writeEpisode(feed, args.write_list)
-        episode_queue.extend([ep for ep in feed.feed_episodes if ep.status == episode.Status.pending])
+        episode_queue.extend([ep for ep in feed.feed_episodes])
 
-    logger.info('{} episodes to download'.format(len(episode_queue)))
-    if not args.skip_download:
+    if args.verify:
+        episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
+        logger.info('Commencing offline cache verification')
+        random.shuffle(episode_queue)
+
+        checked_episodes = list(
+            tqdm(pool.imap_unordered(
+                check_episode,
+                episode_queue),
+                total=len(episode_queue),
+                disable=args.suppress_progress))
+
+        with open('output.txt', 'w') as file:
+            for ep in filter(lambda e: e.status == episode.Status.corrupted, checked_episodes):
+                logger.error(
+                    'Episode {} in podcast {} has a mismatched filesize, presumed corrupted'.format(
+                        ep.title, ep.podcast))
+                file.write(str(ep.path) + '\n')
+
+    elif args.skip_download:
+        for ep in episode_queue:
+            logger.info('Skipping download for episode {} in podcast {}'.format(ep.title, ep.podcast))
+
+    else:
+        episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
+        logger.info('{} episodes to download'.format(len(episode_queue)))
 
         # randomise the list, if all the episodes from one server are close
         # together, then the server will start cutting off downloads. this should
@@ -164,9 +197,6 @@ if __name__ == "__main__":
             episode_queue),
             total=len(episode_queue),
             disable=args.suppress_progress))
-    else:
-        for ep in episode_queue:
-            logger.info('Skipping download for episode {} in podcast {}'.format(ep.title, ep.podcast))
 
     pool.close()
     pool.join()
