@@ -97,7 +97,7 @@ if __name__ == "__main__":
             in_feed.fetchRSS()
             in_feed.makeDirectory(args.destination)
             in_feed.extractEpisodes(args.limit)
-            logger.debug('Feed {} parsed'.format(in_feed.title))
+            logger.debug('Feed {} downloaded'.format(in_feed.title))
 
         except (FeedException, KeyError) as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
@@ -151,8 +151,8 @@ if __name__ == "__main__":
         writer.writeEpisode(feed, args.write_list)
         episode_queue.extend([ep for ep in feed.feed_episodes if ep.status == episode.Status.pending])
 
+    logger.info('{} episodes to download'.format(len(episode_queue)))
     if not args.skip_download:
-        logger.info('{} episodes to download'.format(len(episode_queue)))
 
         # randomise the list, if all the episodes from one server are close
         # together, then the server will start cutting off downloads. this should
@@ -164,6 +164,9 @@ if __name__ == "__main__":
             episode_queue),
             total=len(episode_queue),
             disable=args.suppress_progress))
+    else:
+        for ep in episode_queue:
+            logger.info('Skipping download for episode {} in podcast {}'.format(ep.title, ep.podcast))
 
     pool.close()
     pool.join()
