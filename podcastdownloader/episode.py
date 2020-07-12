@@ -101,7 +101,9 @@ class Episode:
     def verifyDownload(self):
         self._get_download_size()
         if self.path.exists():
-            if self.path.stat().st_size != self.size:
+            found_size = self.path.stat().st_size
+            # set the tolerance as a percent of the filesize
+            if abs(found_size - self.size) >= (self.size * 0.02):
                 self.status = Status.corrupted
 
     def checkExistence(self):
