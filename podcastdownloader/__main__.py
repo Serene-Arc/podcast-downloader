@@ -44,6 +44,7 @@ if __name__ == "__main__":
     download_alternates = parser.add_mutually_exclusive_group()
     download_alternates.add_argument('--skip-download', action='store_true', help='skips the download of episodes')
     download_alternates.add_argument('--verify', action='store_true', help='verify all downloaded files')
+    parser.add_argument('--max-downloads', type=int, default=0, help='maximum number of total episodes to download')
 
     args = parser.parse_args()
 
@@ -185,6 +186,9 @@ if __name__ == "__main__":
 
     else:
         episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
+        if args.max_downloads > 0:
+            logger.info('Reducing number of downloads to a maximum of {}'.format(args.max_downloads))
+            episode_queue = episode_queue[:args.max_downloads]
         logger.info('{} episodes to download'.format(len(episode_queue)))
 
         # randomise the list, if all the episodes from one server are close
