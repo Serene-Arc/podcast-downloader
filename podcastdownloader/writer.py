@@ -18,7 +18,7 @@ def __writeAudacious(feed: feed.Feed):
 
 def __writeText(feed: feed.Feed):
     with open(pathlib.Path(feed.directory, 'episode_list.txt'), 'w') as file:
-        for entry in reversed(feed.episode_list):
+        for entry in reversed(feed.feed_episodes):
             file.write(entry.title + '\n')
 
 
