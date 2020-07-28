@@ -161,6 +161,8 @@ if __name__ == "__main__":
         writer.writeEpisode(feed, args.write_list)
         episode_queue.extend([ep for ep in feed.feed_episodes])
 
+    logger.info('{} episodes missing from archive'.format(
+        len(list(filter(lambda e: e.status == episode.Status.pending, episode_queue)))))
     if args.verify:
         episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
         logger.info('Commencing offline cache verification')
@@ -181,6 +183,7 @@ if __name__ == "__main__":
                 file.write(str(ep.path) + '\n')
 
     elif args.skip_download:
+        episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
         for ep in episode_queue:
             logger.info('Skipping download for episode {} in podcast {}'.format(ep.title, ep.podcast))
 
@@ -189,7 +192,6 @@ if __name__ == "__main__":
         if args.max_downloads > 0:
             logger.info('Reducing number of downloads to a maximum of {}'.format(args.max_downloads))
             episode_queue = episode_queue[:args.max_downloads]
-        logger.info('{} episodes to download'.format(len(episode_queue)))
 
         # randomise the list, if all the episodes from one server are close
         # together, then the server will start cutting off downloads. this should
