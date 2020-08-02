@@ -44,7 +44,8 @@ if __name__ == "__main__":
     download_alternates = parser.add_mutually_exclusive_group()
     download_alternates.add_argument('--skip-download', action='store_true', help='skips the download of episodes')
     download_alternates.add_argument('--verify', action='store_true', help='verify all downloaded files')
-    parser.add_argument('--max-downloads', type=int, default=0, help='maximum number of total episodes to download')
+    parser.add_argument('-m', '--max-downloads', type=int, default=0,
+                        help='maximum number of total episodes to download')
 
     args = parser.parse_args()
 
