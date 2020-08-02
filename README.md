@@ -13,15 +13,18 @@ There are three arguments to be supplied to the program:
 - `-o, --opml` is the location of an OPML file with podcast data
 - `--file` is the location of a simple text file with an RSS feed URL on each line
 - `-l, --limit` is the maximum number of episodes to try and download from the feed. If left blank, it is all episodes, but a small number is fastest for updating a feed
-- `-t, --threads` is the number of threads to run concurrently; defaults to 10
+- `-m, --max-downloads` will limit the number of episodes to be downloaded to the specified integer
 - `-w, --write-list` is the option to write an ordered list of the episodes in the podcast in several different formats, as specified:
 	- `none`
 	- `text`
 	- `audacious`
-- `-s, --suppress-progress` will disable all progress bars
-- `-v, --verbose` will increase the verbosity of the information output to the console
+- `-t, --threads` is the number of threads to run concurrently; defaults to 10
 - `--max-attempts` will specify the number of reattempts for a failed or refused connection. See below for more details.
 - `--skip-download` will do everything but download the files. Useful for updating episode playlists without a lengthy download.
+- `--verify` will scan existing files for ones with a file-size outside a 2% and list them in `results.txt`
+
+- `-s, --suppress-progress` will disable all progress bars
+- `-v, --verbose` will increase the verbosity of the information output to the console
 
 The `--feed`, `--file`, and `--opml` flags can all be specified multiple times to aggregate feeds from multiple locations.
 
@@ -44,3 +47,7 @@ The `--write-list` option should not be used with the `--limit` option. The limi
 Following is an example command to download a single feed to a podcasts folder.
 
 `python3 -m podcastdownloader media/podcasts --f 'http://linustechtips.libsyn.com/wanshow' -o podcasts.opml`
+
+## Podcast Feed Files
+
+A feed file, for use with the `--file` option, is a simple text file with one URL that leads to the RSS feed per line. The podcastdownloader will ignore all lines beginning with a hash (#), as well as empty lines to allow comments and a rudimentary structure if desired.
