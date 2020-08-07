@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
-import unittest
-import podcastdownloader.feed as feed
+import pytest
+from podcastdownloader.feed import Feed
 
 
-class testFeed(unittest.TestCase):
-    def setUp(self):
-        self.feed = feed.Feed('https://rss.art19.com/wecrashed')
-
-    def test_fetchRSS(self):
-        self.feed.fetchRSS()
-        self.assertEquals(self.feed.title, 'WeCrashed: The Rise and Fall of WeWork')
-
-    def test_extractEpisodes(self):
-        self.feed.fetchRSS()
-        self.feed.extractEpisodes(-1)
-        self.assertEquals(len(self.feed.feed_episodes), 11)
+@pytest.fixture
+def feed():
+    return Feed('https://rss.art19.com/wecrashed')
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_fetchRSS(feed):
+    feed.fetchRSS()
+    assert feed.title == 'WeCrashed: The Rise and Fall of WeWork'
+
+
+def test_extractEpisodes(feed):
+    feed.fetchRSS()
+    feed.extractEpisodes(-1)
+    assert len(feed.feed_episodes) == 9
