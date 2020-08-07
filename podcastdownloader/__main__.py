@@ -98,10 +98,11 @@ if __name__ == "__main__":
 
     def readyFeed(in_feed: Feed) -> Feed:
         try:
+            logger.debug('Attempting to download feed {}'.format(in_feed.url))
             in_feed.fetchRSS()
-            in_feed.makeDirectory(args.destination)
             in_feed.extractEpisodes(args.limit)
             logger.debug('Feed {} downloaded'.format(in_feed.title))
+            in_feed.feed = None
 
         except (FeedException, KeyError) as e:
             logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
@@ -158,6 +159,7 @@ if __name__ == "__main__":
     logger.info('Parsing episodes...')
 
     for feed in tqdm(subscribedFeeds, disable=args.suppress_progress):
+        feed.makeDirectory(args.destination)
         feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
         writer.writeEpisode(feed, args.write_list)
         episode_queue.extend([ep for ep in feed.feed_episodes])
