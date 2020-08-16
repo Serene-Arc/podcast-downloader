@@ -58,7 +58,7 @@ class Episode:
 
         if 'links' in self.feed_entry:
             for link in self.feed_entry['links']:
-                if re.match('audio*', link['type']):
+                if 'type' in link and re.match('audio*', link['type']):
                     self.download_link = link['href']
                     self.file_type = link['type']
                     break
