@@ -2,3 +2,4 @@ tqdm
 requests
 feedparser
 mutagen
+python_version>="3.5"
