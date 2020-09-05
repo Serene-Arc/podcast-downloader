@@ -25,6 +25,7 @@ There are three arguments to be supplied to the program:
 
 - `-s, --suppress-progress` will disable all progress bars
 - `-v, --verbose` will increase the verbosity of the information output to the console
+- `--log` will log all messages to a debug level (the equivalent of `-v`) to the specified file, appending if it already exists
 
 The `--feed`, `--file`, and `--opml` flags can all be specified multiple times to aggregate feeds from multiple locations.
 
