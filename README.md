@@ -4,6 +4,8 @@ This is a simple tool for downloading all the available episodes in an RSS feed 
 
 Firstly, Python 3 must be installed, then the requirements must be installed. These are documented in `requirements.txt` and can be installed via the command `python3 -m pip install -r requirements.txt`.
 
+The version of feedparser in the PyPip repository may not work. If that is the case, then use [this fork here](https://github.com/tirkarthi/feedparser).
+
 ## Arguments
 
 There are three arguments to be supplied to the program:
