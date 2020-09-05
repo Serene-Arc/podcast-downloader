@@ -21,11 +21,6 @@ parser = argparse.ArgumentParser()
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
-    stream = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('[%(asctime)s - %(levelname)s] - %(message)s')
-    stream.setFormatter(formatter)
-    logger.addHandler(stream)
 
     parser.add_argument('destination', help='directory to store downloads')
     parser.add_argument('-f', '--feed', action='append', help='feed to download')
@@ -46,6 +41,7 @@ if __name__ == "__main__":
     download_alternates.add_argument('--verify', action='store_true', help='verify all downloaded files')
     parser.add_argument('-m', '--max-downloads', type=int, default=0,
                         help='maximum number of total episodes to download')
+    parser.add_argument('--log', help='log to specified file')
 
     args = parser.parse_args()
 
@@ -55,12 +51,25 @@ if __name__ == "__main__":
         args.opml = [pathlib.Path(file).resolve() for file in args.opml]
     args.destination = pathlib.Path(args.destination).resolve()
 
+    logger = logging.getLogger()
+    logger.setLevel(1)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('[%(asctime)s - %(levelname)s] - %(message)s')
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+
+    if args.log:
+        file_handler = logging.FileHandler(args.log)
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(logging.DEBUG)
+        logger.addHandler(file_handler)
+
     if args.verbose == 0:
-        logger.setLevel(logging.INFO)
+        stream_handler.setLevel(logging.INFO)
     elif args.verbose == 1:
-        logger.setLevel(logging.DEBUG)
+        stream_handler.setLevel(logging.DEBUG)
     elif args.verbose >= 2:
-        logger.setLevel(9)
+        stream_handler.setLevel(9)
 
     if args.max_attempts:
         episode.max_attempts = args.max_attempts
