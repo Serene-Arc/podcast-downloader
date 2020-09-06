@@ -58,6 +58,8 @@ if __name__ == "__main__":
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
+    logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+
     if args.log:
         file_handler = logging.FileHandler(args.log)
         file_handler.setFormatter(formatter)
