@@ -137,7 +137,7 @@ if __name__ == "__main__":
     def downloadEpisode(ep: episode.Episode):
         try:
             ep.downloadContent()
-            logger.debug('Episode {} downloaded'.format(ep.title))
+            logger.debug('Episode {} downloaded from podcast {}'.format(ep.title, ep.podcast))
             try:
                 ep.writeTags()
             except episode.EpisodeException as e:
