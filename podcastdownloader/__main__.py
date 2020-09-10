@@ -14,8 +14,9 @@ from tqdm import tqdm
 
 import podcastdownloader.episode as episode
 import podcastdownloader.writer as writer
-from podcastdownloader.exceptions import FeedException, EpisodeException
+from podcastdownloader.exceptions import EpisodeException, FeedException
 from podcastdownloader.feed import Feed
+from podcastdownloader.tagengine import writeTags
 
 parser = argparse.ArgumentParser()
 
@@ -39,6 +40,10 @@ if __name__ == "__main__":
     download_alternates = parser.add_mutually_exclusive_group()
     download_alternates.add_argument('--skip-download', action='store_true', help='skips the download of episodes')
     download_alternates.add_argument('--verify', action='store_true', help='verify all downloaded files')
+    download_alternates.add_argument(
+        '--update-tags',
+        action='store_true',
+        help='download and apply tags to existing files only')
     parser.add_argument('-m', '--max-downloads', type=int, default=0,
                         help='maximum number of total episodes to download')
     parser.add_argument('--log', help='log to specified file')
@@ -139,7 +144,7 @@ if __name__ == "__main__":
             ep.downloadContent()
             logger.debug('Episode {} downloaded from podcast {}'.format(ep.title, ep.podcast))
             try:
-                ep.writeTags()
+                writeTags(ep)
             except episode.EpisodeException as e:
                 logger.warning('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
         except episode.EpisodeException as e:
@@ -200,6 +205,17 @@ if __name__ == "__main__":
         episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
         for ep in episode_queue:
             logger.info('Skipping download for episode {} in podcast {}'.format(ep.title, ep.podcast))
+
+    elif args.update_tags:
+        episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
+        logger.info('Writing tags to {} files'.format(len(episode_queue)))
+
+        checked_episodes = list(
+            tqdm(pool.imap_unordered(
+                writeTags,
+                episode_queue),
+                total=len(episode_queue),
+                disable=args.suppress_progress))
 
     else:
         episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
