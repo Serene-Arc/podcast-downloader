@@ -59,7 +59,7 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(1)
     stream_handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('[%(asctime)s - %(levelname)s] - %(message)s')
+    formatter = logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s] - %(message)s')
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
