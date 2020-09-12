@@ -54,7 +54,7 @@ def _writeID3Tags(episode: Episode):
     try:
         tags.append(('TRCK', mutagen.id3.TRCK(encoding=3, text=episode.feed_entry['itunes_episode'])))
     except KeyError:
-        logger.warning('Track number could not be written to file {}'.format(episode.path))
+        pass
 
     for (tag, content) in tags:
         try:
@@ -67,4 +67,25 @@ def _writeID3Tags(episode: Episode):
 
 
 def _writeMP4Tags(episode: Episode):
-    logger.critical('Not yet implemented')
+    episode_tags = mutagen.mp4.MP4(episode.path)
+
+    try:
+        episode_tags.add_tags()
+    except mutagen.MutagenError:
+        pass
+
+    tags = [(r'\xa9nam', episode.title),
+            (r'\xa9alb', episode.podcast),
+            (r'desc', episode.feed_entry['summary']),
+            (r'\xa9day', datetime.fromtimestamp(
+                mktime(episode.feed_entry['published_parsed'])).isoformat())]
+
+    try:
+        tags.append((r'trkn', (int(episode.feed_entry['itunes_episode']), 0)))
+    except KeyError:
+        pass
+
+    for (tag, content) in tags:
+        episode_tags[tag] = content
+
+    episode_tags.save(episode.path)
