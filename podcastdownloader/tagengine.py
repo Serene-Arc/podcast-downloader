@@ -81,6 +81,7 @@ def _writeMP4Tags(episode: Episode):
         episode_tags = mutagen.mp4.MP4(episode.path)
     except mutagen.mp4.MP4StreamInfoError:
         logger.error('Thought {} was an MP4 file but it was not'.format(episode.path.name))
+        return
 
     try:
         episode_tags.add_tags()
