@@ -49,6 +49,7 @@ class Feed:
 if __name__ == "__main__":
     import pathlib
     import os
+    from podcastdownloader.tagengine import writeTags
 
     feed = Feed(input('Enter a feed URL: '))
     destination = input('Enter a destination location: ')
@@ -72,4 +73,4 @@ if __name__ == "__main__":
             ep.verifyDownload()
         if ep.status == Status.pending:
             ep.downloadContent()
-            ep.writeTags()
+            writeTags(ep)
