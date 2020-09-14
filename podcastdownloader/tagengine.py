@@ -86,6 +86,9 @@ def _writeMP4Tags(episode: Episode):
         pass
 
     for (tag, content) in tags:
-        episode_tags[tag] = content
+        try:
+            episode_tags[tag] = content
+        except Exception as e:
+            logger.error(str(e))
 
     episode_tags.save(episode.path)
