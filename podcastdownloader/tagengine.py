@@ -47,14 +47,24 @@ def _writeID3Tags(episode: Episode):
     tags = [
         ('TIT2', mutagen.id3.TIT2(encoding=3, text=episode.title)),
         ('TALB', mutagen.id3.TALB(encoding=3, text=episode.podcast)),
-        ('TDES', mutagen.id3.TDES(encoding=3, text=episode.feed_entry['summary'])),
         ('TDOR', mutagen.id3.TDOR(encoding=3, text=datetime.fromtimestamp(
             mktime(episode.feed_entry['published_parsed'])).isoformat()))]
 
-    try:
+    if 'summary' in episode.feed_entry:
+        tags.append(('TDES', mutagen.id3.TDES(encoding=3, text=episode.feed_entry['summary'])))
+    elif 'subtitle' in episode.feed_entry:
+        tags.append(('TDES', mutagen.id3.TDES(encoding=3, text=episode.feed_entry['subtitle'])))
+    else:
+        logger.debug(
+            'Could not add description tag for episode {} in podcast {}'.format(
+                episode.title, episode.podcast))
+
+    if 'itunes_episode' in episode.feed_entry:
         tags.append(('TRCK', mutagen.id3.TRCK(encoding=3, text=episode.feed_entry['itunes_episode'])))
-    except KeyError:
-        pass
+    else:
+        logger.debug(
+            'Could not add track number tag to episode {} in podcast {}'.format(
+                episode.title, episode.podcast))
 
     for (tag, content) in tags:
         try:
@@ -79,14 +89,24 @@ def _writeMP4Tags(episode: Episode):
 
     tags = [(r'\xa9nam', episode.title),
             (r'\xa9alb', episode.podcast),
-            (r'desc', episode.feed_entry['summary']),
             (r'\xa9day', datetime.fromtimestamp(
                 mktime(episode.feed_entry['published_parsed'])).isoformat())]
 
-    try:
+    if 'summary' in episode.feed_entry:
+        tags.append((r'desc', episode.feed_entry['summary']))
+    elif 'subtitle' in episode.feed_entry:
+        tags.append((r'desc', episode.feed_entry['subtitle']))
+    else:
+        logger.debug(
+            'Could not add description tag for episode {} in podcast {}'.format(
+                episode.title, episode.podcast))
+
+    if 'itunes_episode' in episode.feed_entry:
         tags.append((r'trkn', (int(episode.feed_entry['itunes_episode']), 0)))
-    except KeyError:
-        pass
+    else:
+        logger.debug(
+            'Could not add track number tag to episode {} in podcast {}'.format(
+                episode.title, episode.podcast))
 
     for (tag, content) in tags:
         try:
