@@ -89,6 +89,8 @@ def _writeMP4Tags(episode: Episode):
         try:
             episode_tags[tag] = content
         except Exception as e:
-            logger.error(str(e))
+            logger.error(
+                'Could not write tag {} with value {} to episode {} in podcast {}'.format(
+                    tag, content, episode.title, episode.podcast))
 
     episode_tags.save(episode.path)
