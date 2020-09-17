@@ -6,23 +6,28 @@ Firstly, Python 3 must be installed, then the requirements must be installed. Th
 
 ## Arguments
 
-There are three arguments to be supplied to the program:
+Following are the arguments that can be supplied to the program:
 
 - `destination` is the directory that the folder structure will be created in and the podcasts downloaded to
 - `-f, --feed` is the URL for the RSS feed of the podcast
 - `-o, --opml` is the location of an OPML file with podcast data
 - `--file` is the location of a simple text file with an RSS feed URL on each line
-- `-l, --limit` is the maximum number of episodes to try and download from the feed. If left blank, it is all episodes, but a small number is fastest for updating a feed
+- `-l, --limit` is the maximum number of episodes to try and download from the feed; if left blank, it is all episodes, but a small number is fastest for updating a feed
 - `-m, --max-downloads` will limit the number of episodes to be downloaded to the specified integer
 - `-w, --write-list` is the option to write an ordered list of the episodes in the podcast in several different formats, as specified:
   - `none`
   - `text`
   - `audacious`
 - `-t, --threads` is the number of threads to run concurrently; defaults to 10
-- `--max-attempts` will specify the number of reattempts for a failed or refused connection. See below for more details.
-- `--skip-download` will do everything but download the files. Useful for updating episode playlists without a lengthy download.
+- `--max-attempts` will specify the number of reattempts for a failed or refused connection; see below for more details
+
+The following arguments alter the functioning of the program in a major way e.g. they do not download:
+
+- `--skip-download` will do everything but download the files; useful for updating episode playlists without a lengthy download
 - `--verify` will scan existing files for ones with a file-size outside a 2% and list them in `results.txt`
 - `--update-tags` will download episode information and write tags to all episodes already downloaded
+
+The following arguments alter the verbosity and logging behaviour:
 
 - `-s, --suppress-progress` will disable all progress bars
 - `-v, --verbose` will increase the verbosity of the information output to the console
