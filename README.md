@@ -22,6 +22,7 @@ There are three arguments to be supplied to the program:
 - `--max-attempts` will specify the number of reattempts for a failed or refused connection. See below for more details.
 - `--skip-download` will do everything but download the files. Useful for updating episode playlists without a lengthy download.
 - `--verify` will scan existing files for ones with a file-size outside a 2% and list them in `results.txt`
+- `--update-tags` will download episode information and write tags to all episodes already downloaded
 
 - `-s, --suppress-progress` will disable all progress bars
 - `-v, --verbose` will increase the verbosity of the information output to the console
@@ -42,6 +43,16 @@ The maximum number of reattempts may need to be changed in several cases. If you
 ### Warnings
 
 The `--write-list` option should not be used with the `--limit` option. The limit option will be applied to the episode list in whatever format chosen, and this will overwrite any past episode list files. For example, if a `--limit` of 5 is chosen with `-w audacious`, then the exported Audacious playlist will only be 5 items long. Thus the `-w` option should only be used when there is not a limit.
+
+## Tags
+
+The downloader has basic tag writing support. It will write ID3 tags to MP3 files and iTunes-compatible tags to m4a and MP4 files. The information written is as follows:
+
+- The episode title
+- The podcast title
+- The publishing date and time of the episode
+- The description accompanying the episode
+- The episode number (if available)
 
 ## Example Command
 
