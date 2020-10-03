@@ -4,13 +4,30 @@
 
 import os
 import pathlib
+import ssl
+import time
 
 import feedparser
 import requests
 import requests.exceptions
 
-from podcastdownloader.episode import Episode, Status
+from podcastdownloader.episode import Episode, Status, max_attempts
 from podcastdownloader.exceptions import FeedException
+
+
+def _rate_limited_request(url: str) -> requests.Response:
+    url = url.strip()
+    attempts = 1
+    while True:
+        try:
+            response = requests.get(url, timeout=180, allow_redirects=True)
+            return response
+        except (requests.exceptions.RequestException, ssl.SSLError) as e:
+            # 3 is a magic number
+            if attempts > 3:
+                raise FeedException('Failed to get feed {}; connection was limited/refused: {}'.format(url, e))
+            time.sleep(30 * attempts)
+            attempts += 1
 
 
 class Feed:
@@ -20,14 +37,8 @@ class Feed:
         self.downloaded_episodes = []
 
     def __download_rss(self):
-        try:
-            response = requests.get(self.url, timeout=120)
-            if response.status_code != 200:
-                raise FeedException('Failed to download feed with status: {}'.format(response.status_code))
-            self.feed = response.content
-        except requests.exceptions.RequestException:
-            raise FeedException('Failed to get feed at {}'.format(self.url))
-            return
+        response = _rate_limited_request(self.url)
+        self.feed = response.content
 
     def fetchRSS(self):
         self.__download_rss()
@@ -47,8 +58,9 @@ class Feed:
 
 
 if __name__ == "__main__":
-    import pathlib
     import os
+    import pathlib
+
     from podcastdownloader.tagengine import writeTags
 
     feed = Feed(input('Enter a feed URL: '))
