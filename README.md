@@ -18,6 +18,7 @@ Following are the arguments that can be supplied to the program:
   - `none`
   - `text`
   - `audacious`
+  - `m3u`
 - `-t, --threads` is the number of threads to run concurrently; defaults to 10
 - `--max-attempts` will specify the number of reattempts for a failed or refused connection; see below for more details
 
