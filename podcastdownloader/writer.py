@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
+import logging
 import pathlib
 
 import podcastdownloader.feed as feed
+
+logger = logging.getLogger(__name__)
 
 
 def __writeAudacious(feed: feed.Feed):
@@ -13,7 +16,7 @@ def __writeAudacious(feed: feed.Feed):
                 file.write('uri=file://{}\n'.format(episode.path).replace(' ', '%20'))
                 file.write('title={}\n'.format(episode.title).replace(' ', '%20'))
             except AttributeError as e:
-                pass
+                logger.warning('Could not write {} to playlist'.format(episode.title))
 
 
 def __writeText(feed: feed.Feed):
@@ -29,7 +32,7 @@ def __writeM3u(feed: feed.Feed):
             try:
                 file.write(episode.path.name + '\n')
             except AttributeError:
-                pass
+                logger.warning('Could not write {} to playlist'.format(episode.title))
 
 
 def writeEpisode(feed: feed.Feed, write_choice: str):
