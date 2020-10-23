@@ -24,7 +24,7 @@ def __writeText(feed: feed.Feed):
 
 def __writeM3u(feed: feed.Feed):
     with open(pathlib.Path(feed.directory, 'episode_playlist.m3u'), 'w') as file:
-        file.write('#EXTM3U')
+        file.write('#EXTM3U\n')
         for episode in reversed(feed.feed_episodes):
             try:
                 file.write(episode.path.name + '\n')
