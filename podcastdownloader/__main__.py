@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
     parser.add_argument(
         '-w', '--write-list',
-        choices=['none', 'audacious', 'text'],
+        choices=['none', 'audacious', 'text', 'm3u'],
         default='none',
         help='flag to write episode list')
     parser.add_argument('-s', '--suppress-progress', action='store_true')

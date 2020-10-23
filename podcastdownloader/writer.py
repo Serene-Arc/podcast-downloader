@@ -22,8 +22,20 @@ def __writeText(feed: feed.Feed):
             file.write(entry.title + '\n')
 
 
+def __writeM3u(feed: feed.Feed):
+    with open(pathlib.Path(feed.directory, 'episode_playlist.m3u'), 'w') as file:
+        file.write('#EXTM3U')
+        for episode in reversed(feed.feed_episodes):
+            try:
+                file.write(episode.path.name + '\n')
+            except AttributeError:
+                pass
+
+
 def writeEpisode(feed: feed.Feed, write_choice: str):
     if write_choice == 'audacious':
         __writeAudacious(feed)
     elif write_choice == 'text':
         __writeText(feed)
+    elif write_choice == 'm3u':
+        __writeM3u(feed)
