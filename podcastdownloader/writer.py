@@ -30,7 +30,7 @@ def __writeM3u(feed: feed.Feed):
         file.write('#EXTM3U\n')
         for episode in reversed(feed.feed_episodes):
             try:
-                file.write(episode.path.name + '\n')
+                file.write('./' + episode.path.name + '\n')
             except AttributeError:
                 logger.warning('Could not write {} to playlist'.format(episode.title))
 
