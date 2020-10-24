@@ -99,7 +99,7 @@ if __name__ == "__main__":
         for feed_file in args.file:
             with open(pathlib.Path(feed_file), 'r') as file:
                 for line in file.readlines():
-                    if line != '\n' and not line.startswith('#'):
+                    if line != '\n' and not line.strip().startswith('#'):
                         parsed_line = line.split(' #')[0].strip()
                         subscribedFeeds.append(Feed(parsed_line))
                         logger.debug('Feed {} added'.format(line.strip()))
