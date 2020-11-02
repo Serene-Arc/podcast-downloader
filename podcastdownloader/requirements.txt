@@ -1,4 +1,0 @@
-requests
-mutagen
-feedparser
-stageprint

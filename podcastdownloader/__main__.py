@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
     parser.add_argument(
         '-w', '--write-list',
-        choices=['none', 'audacious', 'text'],
+        choices=['none', 'audacious', 'text', 'm3u'],
         default='none',
         help='flag to write episode list')
     parser.add_argument('-s', '--suppress-progress', action='store_true')
@@ -99,8 +99,9 @@ if __name__ == "__main__":
         for feed_file in args.file:
             with open(pathlib.Path(feed_file), 'r') as file:
                 for line in file.readlines():
-                    if line != '\n' and not line.startswith('#'):
-                        subscribedFeeds.append(Feed(line.strip()))
+                    if line != '\n' and not line.strip().startswith('#'):
+                        parsed_line = line.split(' #')[0].strip()
+                        subscribedFeeds.append(Feed(parsed_line))
                         logger.debug('Feed {} added'.format(line.strip()))
 
     episode_queue = []

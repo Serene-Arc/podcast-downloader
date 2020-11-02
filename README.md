@@ -18,6 +18,7 @@ Following are the arguments that can be supplied to the program:
   - `none`
   - `text`
   - `audacious`
+  - `m3u`
 - `-t, --threads` is the number of threads to run concurrently; defaults to 10
 - `--max-attempts` will specify the number of reattempts for a failed or refused connection; see below for more details
 
@@ -67,4 +68,4 @@ Following is an example command to download a single feed to a podcasts folder.
 
 ## Podcast Feed Files
 
-A feed file, for use with the `--file` option, is a simple text file with one URL that leads to the RSS feed per line. The podcastdownloader will ignore all lines beginning with a hash (#), as well as empty lines to allow comments and a rudimentary structure if desired.
+A feed file, for use with the `--file` option, is a simple text file with one URL that leads to the RSS feed per line. The podcastdownloader will ignore all lines beginning with a hash (#), as well as empty lines to allow comments and a rudimentary structure if desired. Additionally, comments can be appended to the end of a line with a feed URL. As long as there is a space between the hash and the end of the URL, it will be removed when the file is parsed.
