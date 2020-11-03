@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from cgi import test
 import configparser
 import logging
 import multiprocessing
@@ -10,6 +11,7 @@ import random
 import sys
 import xml.etree.ElementTree as et
 
+import click
 from tqdm import tqdm
 
 import podcastdownloader.episode as episode
@@ -18,45 +20,11 @@ from podcastdownloader.exceptions import EpisodeException, FeedException
 from podcastdownloader.feed import Feed
 from podcastdownloader.tagengine import writeTags
 
-parser = argparse.ArgumentParser()
+logger = logging.getLogger()
+pool = None
 
 
-if __name__ == "__main__":
-
-    parser.add_argument('destination', help='directory to store downloads')
-    parser.add_argument('-f', '--feed', action='append', help='feed to download')
-    parser.add_argument('--file', action='append', help='location of a file of feeds')
-    parser.add_argument('-o', '--opml', action='append', help='location of an OPML file to load')
-    parser.add_argument('-t', '--threads', type=int, default=10, help='number of concurrent downloads')
-    parser.add_argument('-l', '--limit', type=int, default=-1, help='number of episodes to download from each feed')
-    parser.add_argument(
-        '-w', '--write-list',
-        choices=['none', 'audacious', 'text', 'm3u'],
-        default='none',
-        help='flag to write episode list')
-    parser.add_argument('-s', '--suppress-progress', action='store_true')
-    parser.add_argument('-v', '--verbose', action='count', default=0, help='increase the verbosity')
-    parser.add_argument('--max-attempts', type=int, help='maximum nuimber of attempts to download file')
-    download_alternates = parser.add_mutually_exclusive_group()
-    download_alternates.add_argument('--skip-download', action='store_true', help='skips the download of episodes')
-    download_alternates.add_argument('--verify', action='store_true', help='verify all downloaded files')
-    download_alternates.add_argument(
-        '--update-tags',
-        action='store_true',
-        help='download and apply tags to existing files only')
-    parser.add_argument('-m', '--max-downloads', type=int, default=0,
-                        help='maximum number of total episodes to download')
-    parser.add_argument('--log', help='log to specified file')
-
-    args = parser.parse_args()
-
-    if args.file:
-        args.file = [pathlib.Path(file).resolve() for file in args.file]
-    if args.opml:
-        args.opml = [pathlib.Path(file).resolve() for file in args.opml]
-    args.destination = pathlib.Path(args.destination).resolve()
-
-    logger = logging.getLogger()
+def _setup_logging(verbosity: int, logfile: str) -> None:
     logger.setLevel(1)
     stream_handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s] - %(message)s')
@@ -65,80 +33,167 @@ if __name__ == "__main__":
 
     logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 
-    if args.log:
-        file_handler = logging.FileHandler(args.log)
+    if logfile:
+        file_handler = logging.FileHandler(logfile)
         file_handler.setFormatter(formatter)
         file_handler.setLevel(logging.DEBUG)
         logger.addHandler(file_handler)
 
-    if args.verbose == 0:
+    if verbosity == 0:
         stream_handler.setLevel(logging.INFO)
-    elif args.verbose == 1:
+    elif verbosity == 1:
         stream_handler.setLevel(logging.DEBUG)
-    elif args.verbose >= 2:
+    elif verbosity >= 2:
         stream_handler.setLevel(9)
 
-    if args.max_attempts:
-        episode.max_attempts = args.max_attempts
+
+def _load_feeds(feed_files: list[str], passed_feeds: list[str], opml_files: list[str]) -> list[str]:
+    if feed_files:
+        feed_files = [_check_path(file) for file in feed_files]
+    if opml_files:
+        opml_files = [_check_path(file) for file in opml_files]
 
     subscribedFeeds = []
 
-    if args.opml:
-        for opml_loc in args.opml:
+    if opml_files:
+        for opml_loc in opml_files:
             opml_tree = et.parse(pathlib.Path(opml_loc))
             for opml_feed in opml_tree.getroot().iter('outline'):
                 subscribedFeeds.append(Feed(opml_feed.attrib['xmlUrl']))
                 logger.debug('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
-
-    if args.feed:
-        for arg_feed in args.feed:
+    if passed_feeds:
+        for arg_feed in passed_feeds:
             subscribedFeeds.append(Feed(arg_feed))
             logger.debug('Feed {} added'.format(arg_feed))
-
-    if args.file:
-        for feed_file in args.file:
-            with open(pathlib.Path(feed_file), 'r') as file:
-                for line in file.readlines():
+    if feed_files:
+        for feed_file in feed_files:
+            with open(pathlib.Path(feed_file), 'r') as feed:
+                for line in feed.readlines():
                     if line != '\n' and not line.strip().startswith('#'):
                         parsed_line = line.split(' #')[0].strip()
                         subscribedFeeds.append(Feed(parsed_line))
                         logger.debug('Feed {} added'.format(line.strip()))
 
+    return subscribedFeeds
+
+
+def _check_path(test_path: str) -> pathlib.Path:
+    test_path = pathlib.Path(test_path).resolve()
+    if not test_path.exists():
+        raise Exception('File {} does not exist'.format(str(test_path)))
+    return test_path
+
+
+def fillEpisode(ep: episode.Episode, destination: str) -> episode.Episode:
+    try:
+        ep.parseRSSEntry()
+        ep.calcPath(destination)
+        logger.log(9, 'Episode {} parsed'.format(ep.title))
+    except EpisodeException as e:
+        logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
+    return ep
+
+
+def check_episode(ep: episode.Episode) -> episode.Episode:
+    try:
+        ep.verifyDownload()
+    except KeyError:
+        logger.error('Episode {} in podcast {} could not be checked'.format(ep.title, ep.podcast))
+    return ep
+
+
+_common_options = [
+    click.argument('destination'),
+    click.option('--file', multiple=True, default=[]),
+    click.option('--log'),
+    click.option('--suppress-progress', default=False, is_flag=True),
+    click.option('-f', '--feed', multiple=True, default=[]),
+    click.option('-o', '--opml', multiple=True, default=[]),
+    click.option('-t', '--threads', type=int, default=10),
+    click.option('-v', '--verbose', count=True, default=0)
+]
+
+
+def add_common_options(func):
+    for option in reversed(_common_options):
+        func = option(func)
+    return func
+
+
+def readyFeed(in_feed: Feed) -> Feed:
+    try:
+        in_feed.fetchRSS()
+        in_feed.extractEpisodes(-1)
+        logger.debug('Feed {} downloaded'.format(in_feed.title))
+        in_feed.feed = None
+    except (FeedException, KeyError) as e:
+        logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
+        return None
+    return in_feed
+
+
+def common_setup(context: click.Context):
+    _setup_logging(context.params['verbose'], context.params['log'])
+    context.params['destination'] = _check_path(context.params['destination'])
+
+    context.ensure_object(dict)
+
+    global pool
+    pool = multiprocessing.Pool(context.params['threads'])
+
+    subscribedFeeds = _load_feeds(context.params['file'], context.params['feed'], context.params['opml'])
+    logger.info('{} feeds to be downloaded'.format(len(subscribedFeeds)))
+
     episode_queue = []
     existingFiles = []
 
-    logger.info('{} feeds to be downloaded'.format(len(subscribedFeeds)))
-
-    logger.info('Scanning existing files...')
-    for (dirpath, dirnames, filenames) in os.walk(args.destination):
+    logger.info('Beginning scan of existing files')
+    for (dirpath, dirnames, filenames) in os.walk(context.params['destination']):
         existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
 
-    def readyFeed(in_feed: Feed) -> Feed:
-        try:
-            logger.debug('Attempting to download feed {}'.format(in_feed.url))
-            in_feed.fetchRSS()
-            in_feed.extractEpisodes(args.limit)
-            logger.debug('Feed {} downloaded'.format(in_feed.title))
-            in_feed.feed = None
+    random.shuffle(subscribedFeeds)
 
-        except (FeedException, KeyError) as e:
-            logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
-            return None
+    logger.info('Updating feeds...')
 
-        return in_feed
+    subscribedFeeds = list(
+        tqdm(pool.imap_unordered(
+            readyFeed,
+            subscribedFeeds),
+            total=len(subscribedFeeds),
+            disable=context.params['suppress_progress']))
+    subscribedFeeds = list(filter(None, subscribedFeeds))
 
-    def fillEpisode(ep: episode.Episode) -> episode.Episode:
-        try:
-            ep.parseRSSEntry()
-            ep.calcPath(args.destination)
-            logger.log(9, 'Episode {} parsed'.format(ep.title))
-
+    for feed in tqdm(subscribedFeeds, disable=context.params['suppress_progress']):
+        feed.makeDirectory(context.params['destination'])
+        feed.feed_episodes = list(
+            pool.starmap(
+                fillEpisode, [
+                    (ep, context.params['destination']) for ep in feed.feed_episodes]))
+        for ep in feed.feed_episodes:
             if str(ep.path) in existingFiles:
                 ep.status = episode.Status.downloaded
 
-        except EpisodeException as e:
-            logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
-        return ep
+    context.obj['feeds'] = subscribedFeeds
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@add_common_options
+@click.option('--max-attempts', type=int, default=10)
+@click.option('-l', '--limit', type=int, default=-1)
+@click.option('-m', '--max-downloads', type=int, default=-1)
+@click.option('-w', '--write-list', multiple=True,
+              type=click.Choice(['none', 'audacious', 'text', 'm3u']), default=['none'])
+@click.pass_context
+def download(context: click.Context, **kwargs):
+    """Download episodes of supplied feeds to disk"""
+    common_setup(context)
+
+    episode.max_attempts = context.params['max_attempts']
 
     def downloadEpisode(ep: episode.Episode):
         try:
@@ -151,89 +206,74 @@ if __name__ == "__main__":
         except episode.EpisodeException as e:
             logger.error('{} failed to download: {}'.format(ep.title, e))
 
-    def check_episode(ep: episode.Episode) -> episode.Episode:
-        try:
-            ep.verifyDownload()
-        except KeyError:
-            logger.error('Episode {} in podcast {} could not be checked'.format(ep.title, ep.podcast))
-        return ep
+    for feed in context.obj['feeds']:
+        writer.writeEpisode(feed, context.params['write_list'])
 
-    pool = multiprocessing.Pool(args.threads)
+    episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
+    episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
+    if context.params['max_downloads'] > 0:
+        logger.info('Reducing number of downloads to a maximum of {}'.format(context.params['max_downloads']))
+        episode_queue = episode_queue[:context.params['max_downloads']]
 
-    # randomise the feed list, just so there's less chance of a slow group
-    random.shuffle(subscribedFeeds)
+    # randomise the list, if all the episodes from one server are close
+    # together, then the server will start cutting off downloads. this should
+    # limit/prevent that as much as possible to keep the average speed high
+    random.shuffle(episode_queue)
 
-    logger.info('Updating feeds...')
+    list(tqdm(pool.imap_unordered(
+        downloadEpisode,
+        episode_queue),
+        total=len(episode_queue),
+        disable=context.params['suppress_progress']))
 
-    subscribedFeeds = list(
+
+@cli.command()
+@add_common_options
+@click.pass_context
+def verify(context: click.Context, **kwargs):
+    """Verify all downloaded files"""
+    common_setup(context)
+
+    episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
+    episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
+
+    logger.info('Commencing offline cache verification for {} episodes'.format(len(episode_queue)))
+
+    checked_episodes = list(
         tqdm(pool.imap_unordered(
-            readyFeed,
-            subscribedFeeds),
-            total=len(subscribedFeeds),
-            disable=args.suppress_progress))
-    subscribedFeeds = list(filter(None, subscribedFeeds))
-
-    logger.info('Parsing episodes...')
-
-    for feed in tqdm(subscribedFeeds, disable=args.suppress_progress):
-        feed.makeDirectory(args.destination)
-        feed.feed_episodes = list(pool.imap(fillEpisode, feed.feed_episodes))
-        writer.writeEpisode(feed, args.write_list)
-        episode_queue.extend([ep for ep in feed.feed_episodes])
-
-    logger.info('{} episodes missing from archive'.format(
-        len(list(filter(lambda e: e.status == episode.Status.pending, episode_queue)))))
-    if args.verify:
-        episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
-        logger.info('Commencing offline cache verification')
-        random.shuffle(episode_queue)
-
-        checked_episodes = list(
-            tqdm(pool.imap_unordered(
-                check_episode,
-                episode_queue),
-                total=len(episode_queue),
-                disable=args.suppress_progress))
-
-        with open('output.txt', 'w') as file:
-            for ep in filter(lambda e: e.status == episode.Status.corrupted, checked_episodes):
-                logger.error(
-                    'Episode {} in podcast {} has a mismatched filesize, presumed corrupted'.format(
-                        ep.title, ep.podcast))
-                file.write(str(ep.path) + '\n')
-
-    elif args.skip_download:
-        episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
-        for ep in episode_queue:
-            logger.info('Skipping download for episode {} in podcast {}'.format(ep.title, ep.podcast))
-
-    elif args.update_tags:
-        episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
-        logger.info('Writing tags to {} files'.format(len(episode_queue)))
-
-        checked_episodes = list(
-            tqdm(pool.imap_unordered(
-                writeTags,
-                episode_queue),
-                total=len(episode_queue),
-                disable=args.suppress_progress))
-
-    else:
-        episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
-        if args.max_downloads > 0:
-            logger.info('Reducing number of downloads to a maximum of {}'.format(args.max_downloads))
-            episode_queue = episode_queue[:args.max_downloads]
-
-        # randomise the list, if all the episodes from one server are close
-        # together, then the server will start cutting off downloads. this should
-        # limit/prevent that as much as possible to keep the average speed high
-        random.shuffle(episode_queue)
-
-        list(tqdm(pool.imap_unordered(
-            downloadEpisode,
+            check_episode,
             episode_queue),
             total=len(episode_queue),
-            disable=args.suppress_progress))
+            disable=context.params['suppress_progress']))
 
+    with open('output.txt', 'w') as file:
+        for ep in filter(lambda e: e.status == episode.Status.corrupted, checked_episodes):
+            logger.error(
+                'Episode {} in podcast {} has a mismatched filesize, presumed corrupted'.format(
+                    ep.title, ep.podcast))
+            file.write(str(ep.path) + '\n')
+
+
+@cli.command()
+@add_common_options
+@click.pass_context
+def tag(context: click.Context, **kwargs):
+    """Update tags on downloaded files"""
+    common_setup(context)
+
+    episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
+    episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
+    logger.info('Writing tags to {} files'.format(len(episode_queue)))
+
+    checked_episodes = list(
+        tqdm(pool.imap_unordered(
+            writeTags,
+            episode_queue),
+            total=len(episode_queue),
+            disable=context.params['suppress_progress']))
+
+
+if __name__ == "__main__":
+    cli()
     pool.close()
     pool.join()

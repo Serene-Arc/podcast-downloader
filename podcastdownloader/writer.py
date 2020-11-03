@@ -35,10 +35,11 @@ def __writeM3u(feed: feed.Feed):
                 logger.warning('Could not write {} to playlist'.format(episode.title))
 
 
-def writeEpisode(feed: feed.Feed, write_choice: str):
-    if write_choice == 'audacious':
-        __writeAudacious(feed)
-    elif write_choice == 'text':
-        __writeText(feed)
-    elif write_choice == 'm3u':
-        __writeM3u(feed)
+def writeEpisode(feed: feed.Feed, write_choices: list[str]):
+    for format_choice in write_choices:
+        if format_choice == 'audacious':
+            __writeAudacious(feed)
+        elif format_choice == 'text':
+            __writeText(feed)
+        elif format_choice == 'm3u':
+            __writeM3u(feed)
