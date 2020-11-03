@@ -1,44 +1,81 @@
 # podcast-downloader
 
-This is a simple tool for downloading all the available episodes in an RSS feed to disk, where they can be listened to offline.
+This is a tool for downloading all the available episodes in an RSS feed to disk, where they can be listened to offline, stored, or archived.
+
+The podcast-downloader is designed to run as a script triggered by a cron job or something similar. By conscious choice, there are no databases for the podcast files, special formats, or anything between the user and the file. The downloaded files can be played in any media player or otherwise manipulated to the user's content. Additionally, the program will use multiple threads to fully take advantage of all available bandwidth, allowing many episodes of many different podcasts to be downloaded as quickly as possible.
+
+Since there are no databases, special formats, or any sort of tracking, there is no chance of corruption or data errors causing an episode to be missed or lost. It simply scans the target directory for an episode title and the file is either there or it is not. This allows any downloaded podcasts to be easily managed with another tool or no tool at all.
 
 Firstly, Python 3 must be installed, then the requirements must be installed. These are documented in `requirements.txt` and can be installed via the command `python3 -m pip install -r requirements.txt`.
 
-## Arguments
+## Subcommands
 
-Following are the arguments that can be supplied to the program:
+There are three subcommands for the downloader at the current time:
 
-- `destination` is the directory that the folder structure will be created in and the podcasts downloaded to
-- `-f, --feed` is the URL for the RSS feed of the podcast
-- `-o, --opml` is the location of an OPML file with podcast data
-- `--file` is the location of a simple text file with an RSS feed URL on each line
-- `-l, --limit` is the maximum number of episodes to try and download from the feed; if left blank, it is all episodes, but a small number is fastest for updating a feed
-- `-m, --max-downloads` will limit the number of episodes to be downloaded to the specified integer
-- `-w, --write-list` is the option to write an ordered list of the episodes in the podcast in several different formats, as specified:
-  - `none`
-  - `text`
-  - `audacious`
-  - `m3u`
+- `download`
+- `tag`
+- `verify`
+
+Each of these have the common arguments and options that are described below, as well as some options that are specific to each subcommand.
+
+### `download` Subcommand
+
+This subcommand downloads all of the available podcasts to disk. With the feeds given through the command-line, feed files, and OPML files, the RSS is downloaded and parsed. Each of the feeds are downloaded concurrently, as are each of the episodes.
+
+The program will only download episodes that are missing i.e. not found on the disk. This is determined by searching the specified destination folder and comparing the files there to what the program expects to fine. This means that moving or renaming files will cause them to appear missing. File names are simply the name of the episode, whatever that may be.
+
+Because of this, it is best to run this tool in a Linux environment. Quirks of the Windows operating system mean that filenames maybe be invalid (as the title of episodes may be in UTF-8, which Linux handles without issue). Additionally, the Windows filesystem is case-insensitive, which may cause issue in the edge case where there are multiple episodes that differ only when compared in a case-sensitive manner (it can happen!). Usually, this results in an episode appearing "missing" on every run of the program.
+
+### `tag` Subcommand
+
+This subcommand is a maintenance command and will re-add the tags to all the episodes in the feeds specified. This involves parsing all of the episode data in the RSS feeds but does not re-download the episode itself.
+
+Normally, this is not required. The `download` subcommand applies tags as part of downloading the episode. However, as bugs are fixed and functionality added to this program, there may be missing tags or information that become supported in the future. This subcommand allows for updating previously downloaded episode with this more-advanced tagging system without having to re-download them all again entirely.
+
+### `verify` Subcommand
+
+This subcommand is another maintenance command that should rarely be used, if ever. It scans the destination folder for the episodes and compares the file size to the file size reported in the HTTP headers when downloading the file. If the on-disk file size does not fall within a tolerance range around the header file size (currently 2%), the episode is marked. All episodes are output in a file named `results.txt`.
+
+This subcommand was implemented due to an error in an early version where files were misnamed and it was necessary to find a way to determine which files without deleting the entire collection. Due to how files are stored on disk, there will be **many** false positives as the actual on-disk size is usually bigger than what is specified in the headers. This command should be used as a method of last resort.
+
+### Arguments and Options
+
+#### Common Arguments and Options
+
+Following are the arguments that can be supplied to the program regardless of the subcommand supplied:
+
+- `destination` is the directory to which everything will be downloaded
+- `-f, --feed` is an URL for the RSS feed of the podcast; this can be supplied multiple times
+- `-o, --opml` is the location of an OPML file with podcast data; this can be supplied multiple times
+- `--file` is the location of a simple text file with an RSS feed URL on each line; this can be supplied multiple times
 - `-t, --threads` is the number of threads to run concurrently; defaults to 10
-- `--max-attempts` will specify the number of reattempts for a failed or refused connection; see below for more details
-
-The following arguments alter the functioning of the program in a major way e.g. they do not download:
-
-- `--skip-download` will do everything but download the files; useful for updating episode playlists without a lengthy download
-- `--verify` will scan existing files for ones with a file-size outside a 2% and list them in `results.txt`
-- `--update-tags` will download episode information and write tags to all episodes already downloaded
 
 The following arguments alter the verbosity and logging behaviour:
 
 - `-s, --suppress-progress` will disable all progress bars
-- `-v, --verbose` will increase the verbosity of the information output to the console
+- `-v, --verbose` will increase the verbosity of the information output to the console; this can be supplied multiple times to increase verbosity further
 - `--log` will log all messages to a debug level (the equivalent of `-v`) to the specified file, appending if it already exists
 
 The `--feed`, `--file`, and `--opml` flags can all be specified multiple times to aggregate feeds from multiple locations.
 
 Of these, only the destination is required, though one or more feeds or one or more OPML files must be provided or the program will just complete instantly.
 
-### Maximum Reattempts
+#### Command-Specific Options
+
+##### `download` Options
+
+The following options apply only to the `download` subcommand.
+
+- `-l, --limit` is the maximum number of episodes to try and download from the feed; if left blank, it is all episodes, but a small number is fastest for updating a feed
+- `-m, --max-downloads` will limit the number of episodes to be downloaded to the specified integer
+- `--max-attempts` will specify the number of reattempts for a failed or refused connection; see below for more details
+- `-w, --write-list` is the option to write an ordered list of the episodes in the podcast in several different formats, as specified below; it can also be specified multiple times to write a playlist in different formats
+  - `none`
+  - `text`
+  - `audacious`
+  - `m3u`
+
+###### Maximum Reattempts
 
 In some cases, particularly when downloading a single or a few specific podcasts with a lot of episodes at once, the remote server will receive a number of simultaneous or consecutive requests. As this may appear to be atypical behaviour, this server may refuse or close incoming connections as a rate-limiting measure. This is normal in scraping servers that do not want to be scraped.
 
@@ -46,7 +83,7 @@ There are several countermeasures in the downloader for this behaviour, such as 
 
 The maximum number of reattempts may need to be changed in several cases. If you wish to download the episode regardless of anything else, then you may want to increase the argument. This may result in longer wait times for the downloads to complete. However, a low argument will make the program skip downloads if they time out repeatedly, missing content but completing faster.
 
-### Warnings
+###### Warnings
 
 The `--write-list` option should not be used with the `--limit` option. The limit option will be applied to the episode list in whatever format chosen, and this will overwrite any past episode list files. For example, if a `--limit` of 5 is chosen with `-w audacious`, then the exported Audacious playlist will only be 5 items long. Thus the `-w` option should only be used when there is not a limit.
 
@@ -64,8 +101,8 @@ The downloader has basic tag writing support. It will write ID3 tags to MP3 file
 
 Following is an example command to download a single feed to a podcasts folder.
 
-`python3 -m podcastdownloader media/podcasts --f 'http://linustechtips.libsyn.com/wanshow' -o podcasts.opml`
+`python3 -m podcastdownloader download media/podcasts --f 'http://linustechtips.libsyn.com/wanshow' -o podcasts.opml -w m3u`
 
 ## Podcast Feed Files
 
-A feed file, for use with the `--file` option, is a simple text file with one URL that leads to the RSS feed per line. The podcastdownloader will ignore all lines beginning with a hash (#), as well as empty lines to allow comments and a rudimentary structure if desired. Additionally, comments can be appended to the end of a line with a feed URL. As long as there is a space between the hash and the end of the URL, it will be removed when the file is parsed.
+A feed file, for use with the `--file` option, is a simple text file with one URL that leads to the RSS feed per line. The podcast-downloader will ignore all lines beginning with a hash (#), as well as empty lines to allow comments and a rudimentary structure if desired. Additionally, comments can be appended to the end of a line with a feed URL. As long as there is a space between the hash and the end of the URL, it will be removed when the file is parsed.
