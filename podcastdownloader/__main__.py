@@ -176,6 +176,18 @@ def common_setup(context: click.Context):
     context.obj['feeds'] = subscribedFeeds
 
 
+def downloadEpisode(ep: episode.Episode):
+    try:
+        ep.downloadContent()
+        logger.debug('Episode {} downloaded from podcast {}'.format(ep.title, ep.podcast))
+        try:
+            writeTags(ep)
+        except episode.EpisodeException as e:
+            logger.warning('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
+    except episode.EpisodeException as e:
+        logger.error('{} failed to download: {}'.format(ep.title, e))
+
+
 @click.group()
 def cli():
     pass
@@ -194,17 +206,6 @@ def download(context: click.Context, **kwargs):
     common_setup(context)
 
     episode.max_attempts = context.params['max_attempts']
-
-    def downloadEpisode(ep: episode.Episode):
-        try:
-            ep.downloadContent()
-            logger.debug('Episode {} downloaded from podcast {}'.format(ep.title, ep.podcast))
-            try:
-                writeTags(ep)
-            except episode.EpisodeException as e:
-                logger.warning('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
-        except episode.EpisodeException as e:
-            logger.error('{} failed to download: {}'.format(ep.title, e))
 
     for feed in context.obj['feeds']:
         writer.writeEpisode(feed, context.params['write_list'])
