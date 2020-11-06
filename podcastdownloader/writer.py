@@ -2,6 +2,7 @@
 
 import logging
 import pathlib
+from typing import List
 
 import podcastdownloader.feed as feed
 
@@ -35,7 +36,7 @@ def __writeM3u(feed: feed.Feed):
                 logger.warning('Could not write {} to playlist'.format(episode.title))
 
 
-def writeEpisode(feed: feed.Feed, write_choices: list[str]):
+def writeEpisode(feed: feed.Feed, write_choices: List[str]):
     for format_choice in write_choices:
         if format_choice == 'audacious':
             __writeAudacious(feed)

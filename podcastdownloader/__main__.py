@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-from cgi import test
 import configparser
 import logging
 import multiprocessing
@@ -10,6 +9,7 @@ import pathlib
 import random
 import sys
 import xml.etree.ElementTree as et
+from typing import List
 
 import click
 from tqdm import tqdm
@@ -47,7 +47,7 @@ def _setup_logging(verbosity: int, logfile: str) -> None:
         stream_handler.setLevel(9)
 
 
-def _load_feeds(feed_files: list[str], passed_feeds: list[str], opml_files: list[str]) -> list[str]:
+def _load_feeds(feed_files: List[str], passed_feeds: List[str], opml_files: List[str]) -> List[str]:
     if feed_files:
         feed_files = [_check_path(file) for file in feed_files]
     if opml_files:
