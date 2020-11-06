@@ -170,7 +170,7 @@ def common_setup(context: click.Context):
                 fillEpisode, [
                     (ep, context.params['destination']) for ep in feed.feed_episodes]))
         for ep in feed.feed_episodes:
-            if str(ep.path) in existingFiles:
+            if ep.status != episode.Status.blank and str(ep.path) in existingFiles:
                 ep.status = episode.Status.downloaded
 
     context.obj['feeds'] = subscribedFeeds
