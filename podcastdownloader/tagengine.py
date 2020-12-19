@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import logging
-import pathlib
 from datetime import datetime
 from time import mktime
 
@@ -16,26 +15,22 @@ logger = logging.getLogger(__name__)
 
 
 def writeTags(episode: Episode):
-
-    try:
-        if episode.file_type is None:
-            episode = _guessFileType(episode)
-    except AttributeError:
-        episode = _guessFileType(episode)
+    if episode.file_type is None:
+        episode = _guess_file_type(episode)
 
     if episode.file_type in ('audio/mpeg', 'audio/mp3'):
-        _writeID3Tags(episode)
+        _write_id3_tags(episode)
     elif episode.file_type in ('audio/mp4', 'audio/x-m4a'):
-        _writeMP4Tags(episode)
+        _write_mp4_tags(episode)
 
 
-def _guessFileType(episode: Episode):
+def _guess_file_type(episode: Episode) -> Episode:
     if str(episode.path).endswith('mp3'):
         episode.file_type = 'audio/mp3'
     return episode
 
 
-def _writeID3Tags(episode: Episode):
+def _write_id3_tags(episode: Episode):
     episode_tags = mutagen.id3.ID3FileType(episode.path, ID3=mutagen.id3.ID3)
 
     try:
@@ -76,7 +71,7 @@ def _writeID3Tags(episode: Episode):
     episode_tags.save(episode.path)
 
 
-def _writeMP4Tags(episode: Episode):
+def _write_mp4_tags(episode: Episode):
     try:
         episode_tags = mutagen.mp4.MP4(episode.path)
     except mutagen.mp4.MP4StreamInfoError:
@@ -114,7 +109,7 @@ def _writeMP4Tags(episode: Episode):
             episode_tags[tag] = content
         except Exception as e:
             logger.error(
-                'Could not write tag {} with value {} to episode {} in podcast {}'.format(
-                    tag, content, episode.title, episode.podcast))
+                'Could not write tag {} with value {} to episode {} in podcast {}: {}'.format(
+                    tag, content, episode.title, episode.podcast, e))
 
     episode_tags.save(episode.path)

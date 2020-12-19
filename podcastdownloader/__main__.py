@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 
-import argparse
-import configparser
 import logging
 import multiprocessing
 import os
 import pathlib
 import random
 import sys
-import xml.etree.ElementTree as et
-from typing import List
+import xml.etree.ElementTree as ElementTree
+from typing import Optional
 
 import click
 from tqdm import tqdm
 
+import podcastdownloader
 import podcastdownloader.episode as episode
 import podcastdownloader.writer as writer
 from podcastdownloader.exceptions import EpisodeException, FeedException
@@ -21,10 +20,9 @@ from podcastdownloader.feed import Feed
 from podcastdownloader.tagengine import writeTags
 
 logger = logging.getLogger()
-pool = None
 
 
-def _setup_logging(verbosity: int, logfile: str) -> None:
+def _setup_logging(verbosity: int, logfile: Optional[str]):
     logger.setLevel(1)
     stream_handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s] - %(message)s')
@@ -47,56 +45,53 @@ def _setup_logging(verbosity: int, logfile: str) -> None:
         stream_handler.setLevel(9)
 
 
-def _load_feeds(feed_files: List[str], passed_feeds: List[str], opml_files: List[str]) -> List[str]:
+def _load_feeds(feed_files: list[str], passed_feeds: list[str], opml_files: list[str]) -> list[Feed]:
+    subscribed_feeds = []
     if feed_files:
-        feed_files = [_check_path(file) for file in feed_files]
-    if opml_files:
-        opml_files = [_check_path(file) for file in opml_files]
-
-    subscribedFeeds = []
-
-    if opml_files:
-        for opml_loc in opml_files:
-            opml_tree = et.parse(pathlib.Path(opml_loc))
-            for opml_feed in opml_tree.getroot().iter('outline'):
-                subscribedFeeds.append(Feed(opml_feed.attrib['xmlUrl']))
-                logger.debug('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
-    if passed_feeds:
-        for arg_feed in passed_feeds:
-            subscribedFeeds.append(Feed(arg_feed))
-            logger.debug('Feed {} added'.format(arg_feed))
-    if feed_files:
+        feed_files = [_check_required_path(file) for file in feed_files]
         for feed_file in feed_files:
             with open(pathlib.Path(feed_file), 'r') as feed:
                 for line in feed.readlines():
                     if line != '\n' and not line.strip().startswith('#'):
                         parsed_line = line.split(' #')[0].strip()
-                        subscribedFeeds.append(Feed(parsed_line))
+                        subscribed_feeds.append(Feed(parsed_line))
                         logger.debug('Feed {} added'.format(line.strip()))
+    if opml_files:
+        opml_files = [_check_required_path(file) for file in opml_files]
+        for opml_loc in opml_files:
+            opml_tree = ElementTree.parse(pathlib.Path(opml_loc))
+            for opml_feed in opml_tree.getroot().iter('outline'):
+                subscribed_feeds.append(Feed(opml_feed.attrib['xmlUrl']))
+                logger.debug('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
 
-    return subscribedFeeds
+    if passed_feeds:
+        for arg_feed in passed_feeds:
+            subscribed_feeds.append(Feed(arg_feed))
+            logger.debug('Feed {} added'.format(arg_feed))
+
+    return subscribed_feeds
 
 
-def _check_path(test_path: str) -> pathlib.Path:
+def _check_required_path(test_path: str) -> pathlib.Path:
     test_path = pathlib.Path(test_path).resolve()
     if not test_path.exists():
-        raise Exception('File {} does not exist'.format(str(test_path)))
+        raise Exception('File {} does not exist'.format(test_path))
     return test_path
 
 
-def fillEpisode(ep: episode.Episode, destination: str) -> episode.Episode:
+def map_fill_episode(ep: episode.Episode, destination: pathlib.Path) -> episode.Episode:
     try:
-        ep.parseRSSEntry()
-        ep.calcPath(destination)
+        ep.parse_rss_entry()
+        ep.calculate_file_path(destination)
         logger.log(9, 'Episode {} parsed'.format(ep.title))
     except EpisodeException as e:
         logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
     return ep
 
 
-def check_episode(ep: episode.Episode) -> episode.Episode:
+def map_verify_episode_download(ep: episode.Episode) -> episode.Episode:
     try:
-        ep.verifyDownload()
+        ep.verify_download_file()
     except KeyError:
         logger.error('Episode {} in podcast {} could not be checked'.format(ep.title, ep.podcast))
     return ep
@@ -120,10 +115,10 @@ def add_common_options(func):
     return func
 
 
-def readyFeed(in_feed: Feed) -> Feed:
+def map_ready_feed(in_feed: Feed) -> Optional[Feed]:
     try:
-        in_feed.fetchRSS()
-        in_feed.extractEpisodes(-1)
+        in_feed.fetch_rss()
+        in_feed.extract_episodes(-1)
         logger.debug('Feed {} downloaded'.format(in_feed.title))
         in_feed.feed = None
     except (FeedException, KeyError) as e:
@@ -132,53 +127,54 @@ def readyFeed(in_feed: Feed) -> Feed:
     return in_feed
 
 
-def common_setup(context: click.Context):
+def common_setup(context: click.Context) -> multiprocessing.Pool():
     _setup_logging(context.params['verbose'], context.params['log'])
-    context.params['destination'] = _check_path(context.params['destination'])
+    context.params['destination'] = _check_required_path(context.params['destination'])
 
     context.ensure_object(dict)
-
-    global pool
     pool = multiprocessing.Pool(context.params['threads'])
 
-    subscribedFeeds = _load_feeds(context.params['file'], context.params['feed'], context.params['opml'])
-    logger.info('{} feeds to be downloaded'.format(len(subscribedFeeds)))
+    existing_files = scan_existing_files(context)
 
-    episode_queue = []
-    existingFiles = []
+    subscribed_feeds = download_feeds(context, pool)
+    random.shuffle(subscribed_feeds)
 
+    for feed in tqdm(subscribed_feeds, disable=context.params['suppress_progress']):
+        feed.make_directory(context.params['destination'])
+        feed.feed_episodes = list(pool.starmap(
+            map_fill_episode, [(ep, context.params['destination']) for ep in feed.feed_episodes]))
+        for ep in feed.feed_episodes:
+            if ep.status != episode.EpisodeStatus.BLANK and str(ep.path) in existing_files:
+                ep.status = episode.EpisodeStatus.DOWNLOADED
+
+    context.obj['feeds'] = subscribed_feeds
+    return pool
+
+
+def download_feeds(context: click.Context, pool: multiprocessing.Pool) -> list[Feed]:
+    subscribed_feeds = _load_feeds(context.params['file'], context.params['feed'], context.params['opml'])
+    logger.info('{} feeds to be downloaded'.format(len(subscribed_feeds)))
+    subscribed_feeds = list(
+        tqdm(pool.imap_unordered(
+            map_ready_feed,
+            subscribed_feeds),
+            total=len(subscribed_feeds),
+            disable=context.params['suppress_progress']))
+    subscribed_feeds = list(filter(None, subscribed_feeds))
+    return subscribed_feeds
+
+
+def scan_existing_files(context) -> list[str]:
+    existing_files = []
     logger.info('Beginning scan of existing files')
     for (dirpath, dirnames, filenames) in os.walk(context.params['destination']):
-        existingFiles.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
-
-    random.shuffle(subscribedFeeds)
-
-    logger.info('Updating feeds...')
-
-    subscribedFeeds = list(
-        tqdm(pool.imap_unordered(
-            readyFeed,
-            subscribedFeeds),
-            total=len(subscribedFeeds),
-            disable=context.params['suppress_progress']))
-    subscribedFeeds = list(filter(None, subscribedFeeds))
-
-    for feed in tqdm(subscribedFeeds, disable=context.params['suppress_progress']):
-        feed.makeDirectory(context.params['destination'])
-        feed.feed_episodes = list(
-            pool.starmap(
-                fillEpisode, [
-                    (ep, context.params['destination']) for ep in feed.feed_episodes]))
-        for ep in feed.feed_episodes:
-            if ep.status != episode.Status.blank and str(ep.path) in existingFiles:
-                ep.status = episode.Status.downloaded
-
-    context.obj['feeds'] = subscribedFeeds
+        existing_files.extend([str(pathlib.PurePath(dirpath, filename)) for filename in filenames])
+    return existing_files
 
 
-def downloadEpisode(ep: episode.Episode):
+def map_download_episode(ep: episode.Episode):
     try:
-        ep.downloadContent()
+        ep.download_content()
         logger.debug('Episode {} downloaded from podcast {}'.format(ep.title, ep.podcast))
         try:
             writeTags(ep)
@@ -203,29 +199,34 @@ def cli():
 @click.pass_context
 def download(context: click.Context, **kwargs):
     """Download episodes of supplied feeds to disk"""
-    common_setup(context)
+    pool = common_setup(context)
 
-    episode.max_attempts = context.params['max_attempts']
+    podcastdownloader.episode.max_attempts = context.params['max_attempts']
 
     for feed in context.obj['feeds']:
-        writer.writeEpisode(feed, context.params['write_list'])
+        writer.write_episode_playlist(feed, context.params['write_list'])
 
-    episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
-    episode_queue = list(filter(lambda e: e.status == episode.Status.pending, episode_queue))
-    if context.params['max_downloads'] > 0:
-        logger.info('Reducing number of downloads to a maximum of {}'.format(context.params['max_downloads']))
-        episode_queue = episode_queue[:context.params['max_downloads']]
+    episode_queue = bulk_check_episodes(context)
 
-    # randomise the list, if all the episodes from one server are close
-    # together, then the server will start cutting off downloads. this should
-    # limit/prevent that as much as possible to keep the average speed high
+    # randomise the list, if all the episodes from one server are close together, then the server will start cutting off
+    # downloads. this should limit/prevent that as much as possible to keep the average speed high
     random.shuffle(episode_queue)
 
     list(tqdm(pool.imap_unordered(
-        downloadEpisode,
+        map_download_episode,
         episode_queue),
         total=len(episode_queue),
         disable=context.params['suppress_progress']))
+    _kill_pool(pool)
+
+
+def bulk_check_episodes(context: click.Context) -> list[episode.Episode]:
+    episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
+    episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.PENDING, episode_queue))
+    if context.params['max_downloads'] > 0:
+        logger.info('Reducing number of downloads to a maximum of {}'.format(context.params['max_downloads']))
+        episode_queue = episode_queue[:context.params['max_downloads']]
+    return episode_queue
 
 
 @cli.command()
@@ -233,26 +234,25 @@ def download(context: click.Context, **kwargs):
 @click.pass_context
 def verify(context: click.Context, **kwargs):
     """Verify all downloaded files"""
-    common_setup(context)
+    pool = common_setup(context)
 
     episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
-    episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
+    episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED, episode_queue))
 
     logger.info('Commencing offline cache verification for {} episodes'.format(len(episode_queue)))
 
-    checked_episodes = list(
-        tqdm(pool.imap_unordered(
-            check_episode,
-            episode_queue),
-            total=len(episode_queue),
-            disable=context.params['suppress_progress']))
+    checked_episodes = list(tqdm(pool.imap_unordered(
+        map_verify_episode_download,
+        episode_queue),
+        total=len(episode_queue),
+        disable=context.params['suppress_progress']))
 
     with open('output.txt', 'w') as file:
-        for ep in filter(lambda e: e.status == episode.Status.corrupted, checked_episodes):
+        for ep in filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.CORRUPTED, checked_episodes):
             logger.error(
-                'Episode {} in podcast {} has a mismatched filesize, presumed corrupted'.format(
-                    ep.title, ep.podcast))
+                'Episode {} in podcast {} has a mismatched filesize, presumed corrupted'.format(ep.title, ep.podcast))
             file.write(str(ep.path) + '\n')
+    _kill_pool(pool)
 
 
 @cli.command()
@@ -260,21 +260,24 @@ def verify(context: click.Context, **kwargs):
 @click.pass_context
 def tag(context: click.Context, **kwargs):
     """Update tags on downloaded files"""
-    common_setup(context)
+    pool = common_setup(context)
 
     episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
-    episode_queue = list(filter(lambda e: e.status == episode.Status.downloaded, episode_queue))
+    episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED, episode_queue))
     logger.info('Writing tags to {} files'.format(len(episode_queue)))
 
-    checked_episodes = list(
-        tqdm(pool.imap_unordered(
-            writeTags,
-            episode_queue),
-            total=len(episode_queue),
-            disable=context.params['suppress_progress']))
+    list(tqdm(pool.imap_unordered(
+        writeTags,
+        episode_queue),
+        total=len(episode_queue),
+        disable=context.params['suppress_progress']))
+    _kill_pool(pool)
+
+
+def _kill_pool(pool: multiprocessing.Pool):
+    pool.close()
+    pool.join()
 
 
 if __name__ == "__main__":
     cli()
-    pool.close()
-    pool.join()

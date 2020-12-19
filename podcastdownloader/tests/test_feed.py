@@ -10,11 +10,11 @@ def feed():
 
 
 def test_fetchRSS(feed):
-    feed.fetchRSS()
+    feed.fetch_rss()
     assert feed.title == 'WeCrashed: The Rise and Fall of WeWork'
 
 
 def test_extractEpisodes(feed):
-    feed.fetchRSS()
-    feed.extractEpisodes(-1)
+    feed.fetch_rss()
+    feed.extract_episodes(-1)
     assert len(feed.feed_episodes) == 9

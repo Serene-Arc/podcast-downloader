@@ -5,22 +5,20 @@ import pathlib
 import re
 import ssl
 import time
-from enum import Enum
-from typing import Dict, Optional
+from enum import Enum, auto
+from typing import Optional
 
-import mutagen
-import mutagen.easyid3
 import requests
 import requests.exceptions
 
 from podcastdownloader.exceptions import EpisodeException
 
 
-class Status(Enum):
-    blank = 0
-    pending = 1
-    downloaded = 2
-    corrupted = 3
+class EpisodeStatus(Enum):
+    BLANK = auto()
+    PENDING = auto()
+    DOWNLOADED = auto()
+    CORRUPTED = auto()
 
 
 max_attempts = 10
@@ -46,73 +44,79 @@ def _rate_limited_request(url: str, head_only: bool) -> requests.Response:
 
 
 class Episode:
-    def __init__(self, feed_dict: Dict, podcast: str):
+    def __init__(self, feed_dict: dict, podcast: str):
         self.feed_entry = feed_dict
         self.podcast = podcast
-        self.status = Status.blank
-        self.download_link = None
-        self.size = None
+        self.status = EpisodeStatus.BLANK
+        self.download_link: Optional[str] = None
+        self.title: Optional[str] = None
+        self.file_type: Optional[str] = None
+        self.path: Optional[pathlib.Path] = None
 
-    def parseRSSEntry(self):
-        self.title = re.sub(r'(/|\0)', '', self.feed_entry['title'])
+    def parse_rss_entry(self):
+        self.title = re.sub(r'[/\0]', '', self.feed_entry['title'])
+        self._find_download_link()
+        self.status = EpisodeStatus.PENDING
 
+    def _find_download_link(self):
         if 'links' in self.feed_entry:
             for link in self.feed_entry['links']:
-                if 'type' in link and re.match('audio*', link['type']):
+                if 'type' in link and re.match('audio.*', link['type']):
                     self.download_link = link['href']
                     self.file_type = link['type']
                     break
-
         elif 'link' in self.feed_entry:
             self.download_link = self.feed_entry['link']
             self.file_type = None
-
         else:
-            self.download_link = None
-
-        if not self.download_link:
             raise EpisodeException(
-                'No download link found for episode {} in podcast {}'.format(
-                    self.title, self.podcast))
-
+                'No download link found for episode {} in podcast {}'.format(self.title, self.podcast))
         if not self.file_type:
             r = _rate_limited_request(self.download_link, True)
             self.file_type = r.headers['content-type']
             r.close()
 
-        self.status = Status.pending
-
-    def calcPath(self, dest_folder: pathlib.Path):
+    def calculate_file_path(self, dest_folder: pathlib.Path):
         intended_path = pathlib.Path(dest_folder, self.podcast)
         self.path = None
+        self.file_type = self.file_type.lower()
 
-        if self.file_type == 'audio/mp4' or self.file_type == 'audio/x-m4a':
-            self.path = pathlib.Path(intended_path, self.title + '.m4a')
-        elif self.file_type == 'audio/mpeg' or self.file_type == 'audio/mp3':
-            self.path = pathlib.Path(intended_path, self.title + '.mp3')
-
-        if self.path is None:
+        # Use MIME types to determine filename
+        if self.file_type in ('audio/mp4', 'audio/x-m4a'):
+            suffix = '.m4a'
+        elif self.file_type in ('audio/mpeg', 'audio/mp3', 'audio/mpa', 'audio/mpa-robust'):
+            suffix = '.mp3'
+        elif self.file_type in ('audio/aac', 'audio/aacp', 'audio/3gpp', 'audio/3gpp2',
+                                'audio/mp4a-latm', 'audio/mpeg4-generic'):
+            suffix = '.aac'
+        elif self.file_type in ('audio/flac', 'audio/x-flac'):
+            suffix = '.flac'
+        elif self.file_type == 'audio/wav':
+            suffix = '.wav'
+        elif self.file_type in ('audio/ogg', 'audio/opus'):
+            suffix = '.opus'
+        else:
             raise EpisodeException('Cannot determine filename with codec {}'.format(self.file_type))
+        self.path = pathlib.Path(intended_path, self.title + suffix)
 
-    def _get_download_size(self):
+    def _get_download_size(self) -> int:
         r = _rate_limited_request(self.download_link, True)
-        self.size = int(r.headers['content-length'])
+        return int(r.headers['content-length'])
 
-    def verifyDownload(self):
-        self._get_download_size()
+    def verify_download_file(self):
+        expected_size = self._get_download_size()
         if self.path.exists():
-            found_size = self.path.stat().st_size
+            reported_filesystem_size = self.path.stat().st_size
             # set the tolerance as a percent of the filesize
-            if abs(found_size - self.size) >= (self.size * 0.02):
-                self.status = Status.corrupted
+            if abs(reported_filesystem_size - expected_size) >= (expected_size * 0.02):
+                self.status = EpisodeStatus.CORRUPTED
 
-    def checkExistence(self):
+    def check_existence(self):
         if os.path.exists(self.path) is True:
-            self.status = Status.downloaded
+            self.status = EpisodeStatus.DOWNLOADED
 
-    def downloadContent(self):
+    def download_content(self):
         content = _rate_limited_request(self.download_link, False).content
-
         with open(self.path, 'wb') as episode_file:
             episode_file.write(content)
-            self.status = Status.downloaded
+            self.status = EpisodeStatus.DOWNLOADED
