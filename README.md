@@ -20,11 +20,11 @@ Each of these have the common arguments and options that are described below, as
 
 ### `download` Subcommand
 
-This subcommand downloads all of the available podcasts to disk. With the feeds given through the command-line, feed files, and OPML files, the RSS is downloaded and parsed. Each of the feeds are downloaded concurrently, as are each of the episodes.
+This subcommand downloads all of the available podcasts to disk. With the feeds given through the command-line, feed files, and OPML files, the RSS is downloaded and parsed. Each of the feeds is downloaded concurrently, as are each of the episodes.
 
-The program will only download episodes that are missing i.e. not found on the disk. This is determined by searching the specified destination folder and comparing the files there to what the program expects to fine. This means that moving or renaming files will cause them to appear missing. File names are simply the name of the episode, whatever that may be.
+The program will only download episodes that are missing i.e. not found on the disk. This is determined by searching the specified destination folder and comparing the files there to what the program expects to find. This means that moving or renaming files will cause them to appear missing. File names are simply the name of the episode, whatever that may be.
 
-Because of this, it is best to run this tool in a Linux environment. Quirks of the Windows operating system mean that filenames maybe be invalid (as the title of episodes may be in UTF-8, which Linux handles without issue). Additionally, the Windows filesystem is case-insensitive, which may cause issue in the edge case where there are multiple episodes that differ only when compared in a case-sensitive manner (it can happen!). Usually, this results in an episode appearing "missing" on every run of the program.
+Because of this, it is best to run this tool in a Linux environment. Quirks of the Windows operating system mean that filenames maybe be invalid (as the title of episodes may be in UTF-8, which Linux handles without issue). Additionally, the Windows filesystem is case-insensitive, which may cause issues in the edge case where there are multiple episodes that differ only when compared in a case-sensitive manner (it can happen!). Usually, this results in an episode appearing "missing" on every run of the program.
 
 ### `tag` Subcommand
 
@@ -74,6 +74,8 @@ The following options apply only to the `download` subcommand.
   - `text`
   - `audacious`
   - `m3u`
+  
+The `--limit` and `--max-downloads` arguments perform similar functions, but differ in scope. `--limit` applies *only* to a single feed i.e. if `--limit 10` is given to 10 feeds, then a maximum of 100 episodes will be downloaded, with 10 from each feed. However if `--max-downloads 100` is given then only 100 episodes total will be downloaded, regardless of the feed. This may result in some feeds not being downloaded at all, or completely downloaded, as the episode selection is random.
 
 ###### Maximum Reattempts
 
