@@ -17,4 +17,4 @@ def test_fetchRSS(feed):
 def test_extractEpisodes(feed):
     feed.fetch_rss()
     feed.extract_episodes(-1)
-    assert len(feed.feed_episodes) == 9
+    assert len(feed.feed_episodes) == 10
