@@ -38,7 +38,7 @@ def _rate_limited_request(url: str, head_only: bool) -> requests.Response:
 
         except (requests.exceptions.RequestException, ssl.SSLError) as e:
             if attempts > max_attempts:
-                raise EpisodeException('Connection was limited/refused: {}'.format(e))
+                raise EpisodeException(f'Connection was limited/refused: {e}')
             time.sleep(30 * attempts)
             attempts += 1
 
@@ -69,8 +69,7 @@ class Episode:
             self.download_link = self.feed_entry['link']
             self.file_type = None
         else:
-            raise EpisodeException(
-                'No download link found for episode {} in podcast {}'.format(self.title, self.podcast))
+            raise EpisodeException(f'No download link found for episode {self.title} in podcast {self.podcast}')
         if not self.file_type:
             r = _rate_limited_request(self.download_link, True)
             self.file_type = r.headers['content-type']
@@ -86,8 +85,14 @@ class Episode:
             suffix = '.m4a'
         elif self.file_type in ('audio/mpeg', 'audio/mp3', 'audio/mpa', 'audio/mpa-robust'):
             suffix = '.mp3'
-        elif self.file_type in ('audio/aac', 'audio/aacp', 'audio/3gpp', 'audio/3gpp2',
-                                'audio/mp4a-latm', 'audio/mpeg4-generic'):
+        elif self.file_type in (
+            'audio/aac',
+            'audio/aacp',
+            'audio/3gpp',
+            'audio/3gpp2',
+            'audio/mp4a-latm',
+            'audio/mpeg4-generic',
+        ):
             suffix = '.aac'
         elif self.file_type in ('audio/flac', 'audio/x-flac'):
             suffix = '.flac'
@@ -96,7 +101,7 @@ class Episode:
         elif self.file_type in ('audio/ogg', 'audio/opus'):
             suffix = '.opus'
         else:
-            raise EpisodeException('Cannot determine filename with codec {}'.format(self.file_type))
+            raise EpisodeException(f'Cannot determine filename with codec {self.file_type}')
         self.path = pathlib.Path(intended_path, self.title + suffix)
 
     def _get_download_size(self) -> int:
