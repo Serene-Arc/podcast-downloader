@@ -127,7 +127,7 @@ def map_ready_feed(in_feed: Feed) -> Optional[Feed]:
     return in_feed
 
 
-def common_setup(context: click.Context) -> multiprocessing.Pool():
+def common_setup(context: click.Context) -> multiprocessing.Pool:
     _setup_logging(context.params['verbose'], context.params['log'])
     context.params['destination'] = _check_required_path(context.params['destination'])
 
@@ -164,7 +164,7 @@ def download_feeds(context: click.Context, pool: multiprocessing.Pool) -> list[F
     return subscribed_feeds
 
 
-def scan_existing_files(context) -> list[str]:
+def scan_existing_files(context: click.Context) -> list[str]:
     existing_files = []
     logger.info('Beginning scan of existing files')
     for (dirpath, dirnames, filenames) in os.walk(context.params['destination']):
@@ -197,7 +197,7 @@ def cli():
 @click.option('-w', '--write-list', multiple=True,
               type=click.Choice(['none', 'audacious', 'text', 'm3u']), default=['none'])
 @click.pass_context
-def download(context: click.Context, **kwargs):
+def download(context: click.Context, **_):
     """Download episodes of supplied feeds to disk"""
     pool = common_setup(context)
 
@@ -232,7 +232,7 @@ def bulk_check_episodes(context: click.Context) -> list[episode.Episode]:
 @cli.command()
 @add_common_options
 @click.pass_context
-def verify(context: click.Context, **kwargs):
+def verify(context: click.Context, **_):
     """Verify all downloaded files"""
     pool = common_setup(context)
 
@@ -258,7 +258,7 @@ def verify(context: click.Context, **kwargs):
 @cli.command()
 @add_common_options
 @click.pass_context
-def tag(context: click.Context, **kwargs):
+def tag(context: click.Context, **_):
     """Update tags on downloaded files"""
     pool = common_setup(context)
 
