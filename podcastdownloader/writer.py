@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 def _write_audacious(feed: feed.Feed):
     with open(pathlib.Path(feed.directory, 'episode_playlist.audpl'), 'w') as file:
-        file.write('title={}\n'.format(feed.title).replace(' ', '%20'))
+        file.write(f'title={feed.title}\n'.replace(' ', '%20'))
         for episode in reversed(feed.feed_episodes):
             try:
-                file.write('uri=file://{}\n'.format(episode.path).replace(' ', '%20'))
-                file.write('title={}\n'.format(episode.title).replace(' ', '%20'))
+                file.write(f'uri=file://{episode.path}\n'.replace(' ', '%20'))
+                file.write(f'title={episode.title}\n'.replace(' ', '%20'))
             except AttributeError:
-                logger.warning('Could not write {} to playlist'.format(episode.title))
+                logger.warning(f'Could not write {episode.title} to playlist')
 
 
 def _write_text(feed: feed.Feed):
@@ -32,7 +32,7 @@ def _write_m3u(feed: feed.Feed):
             try:
                 file.write('./' + episode.path.name + '\n')
             except AttributeError:
-                logger.warning('Could not write {} to playlist'.format(episode.title))
+                logger.warning(f'Could not write {episode.title} to playlist')
 
 
 def write_episode_playlist(feed: feed.Feed, write_choices: list[str]):

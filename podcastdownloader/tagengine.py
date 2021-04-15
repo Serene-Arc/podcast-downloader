@@ -43,30 +43,27 @@ def _write_id3_tags(episode: Episode):
         ('TIT2', mutagen.id3.TIT2(encoding=3, text=episode.title)),
         ('TALB', mutagen.id3.TALB(encoding=3, text=episode.podcast)),
         ('TDOR', mutagen.id3.TDOR(encoding=3, text=datetime.fromtimestamp(
-            mktime(episode.feed_entry['published_parsed'])).isoformat()))]
+            mktime(episode.feed_entry['published_parsed'])).isoformat())),
+    ]
 
     if 'summary' in episode.feed_entry:
         tags.append(('TDES', mutagen.id3.TDES(encoding=3, text=episode.feed_entry['summary'])))
     elif 'subtitle' in episode.feed_entry:
         tags.append(('TDES', mutagen.id3.TDES(encoding=3, text=episode.feed_entry['subtitle'])))
     else:
-        logger.debug(
-            'Could not add description tag for episode {} in podcast {}'.format(
-                episode.title, episode.podcast))
+        logger.debug(f'Could not add description tag for episode {episode.title} in podcast {episode.podcast}')
 
     if 'itunes_episode' in episode.feed_entry:
         tags.append(('TRCK', mutagen.id3.TRCK(encoding=3, text=episode.feed_entry['itunes_episode'])))
     else:
-        logger.debug(
-            'Could not add track number tag to episode {} in podcast {}'.format(
-                episode.title, episode.podcast))
+        logger.debug(f'Could not add track number tag to episode {episode.title} in podcast {episode.podcast}')
 
     for (tag, content) in tags:
         try:
             episode_tags[tag] = content
-            logger.debug('Wrote tag {}'.format(tag))
+            logger.debug(f'Wrote tag {tag}')
         except Exception as e:
-            logger.error('Mutagen had an error writing ID3 tag {}: {}'.format(tag, e))
+            logger.error(f'Mutagen had an error writing ID3 tag {tag}: {e}')
 
     episode_tags.save(episode.path)
 
@@ -75,7 +72,7 @@ def _write_mp4_tags(episode: Episode):
     try:
         episode_tags = mutagen.mp4.MP4(episode.path)
     except mutagen.mp4.MP4StreamInfoError:
-        logger.error('Thought {} was an MP4 file but it was not'.format(episode.path.name))
+        logger.error(f'Thought {episode.path.name} was an MP4 file but it was not')
         return
 
     try:
@@ -83,33 +80,28 @@ def _write_mp4_tags(episode: Episode):
     except mutagen.MutagenError:
         pass
 
-    tags = [(r'\xa9nam', episode.title),
-            (r'\xa9alb', episode.podcast),
-            (r'\xa9day', datetime.fromtimestamp(
-                mktime(episode.feed_entry['published_parsed'])).isoformat())]
+    tags = [
+        (r'\xa9nam', episode.title),
+        (r'\xa9alb', episode.podcast),
+        (r'\xa9day', datetime.fromtimestamp(mktime(episode.feed_entry['published_parsed'])).isoformat()),
+    ]
 
     if 'summary' in episode.feed_entry:
         tags.append((r'desc', episode.feed_entry['summary']))
     elif 'subtitle' in episode.feed_entry:
         tags.append((r'desc', episode.feed_entry['subtitle']))
     else:
-        logger.debug(
-            'Could not add description tag for episode {} in podcast {}'.format(
-                episode.title, episode.podcast))
+        logger.debug(f'Could not add description tag for episode {episode.title} in podcast {episode.podcast}')
 
     if 'itunes_episode' in episode.feed_entry:
         tags.append((r'trkn', (int(episode.feed_entry['itunes_episode']), 0)))
     else:
-        logger.debug(
-            'Could not add track number tag to episode {} in podcast {}'.format(
-                episode.title, episode.podcast))
+        logger.debug(f'Could not add track number tag to episode {episode.title} in podcast {episode.podcast}')
 
     for (tag, content) in tags:
         try:
             episode_tags[tag] = content
         except Exception as e:
-            logger.error(
-                'Could not write tag {} with value {} to episode {} in podcast {}: {}'.format(
-                    tag, content, episode.title, episode.podcast, e))
+            logger.error(f'Could not write {tag}:{content} to {episode.title} in podcast {episode.podcast}: {e}')
 
     episode_tags.save(episode.path)
