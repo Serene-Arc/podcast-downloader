@@ -25,7 +25,7 @@ def _limited_rate_request(url: str) -> requests.Response:
             # 3 is a magic number
             # TODO: make this configurable as well
             if attempts > 3:
-                raise FeedException('Failed to get feed {}; connection was limited/refused: {}'.format(url, e))
+                raise FeedException(f'Failed to get feed {url}; connection was limited/refused: {e}')
             time.sleep(30 * attempts)
             attempts += 1
 
