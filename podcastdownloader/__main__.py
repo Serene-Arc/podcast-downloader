@@ -55,19 +55,19 @@ def _load_feeds(feed_files: list[str], passed_feeds: list[str], opml_files: list
                     if line != '\n' and not line.strip().startswith('#'):
                         parsed_line = line.split(' #')[0].strip()
                         subscribed_feeds.append(Feed(parsed_line))
-                        logger.debug('Feed {} added'.format(line.strip()))
+                        logger.debug(f'Feed {line.strip()} added')
     if opml_files:
         opml_files = [_check_required_path(file) for file in opml_files]
         for opml_loc in opml_files:
             opml_tree = ElementTree.parse(pathlib.Path(opml_loc))
             for opml_feed in opml_tree.getroot().iter('outline'):
                 subscribed_feeds.append(Feed(opml_feed.attrib['xmlUrl']))
-                logger.debug('Feed {} added'.format(opml_feed.attrib['xmlUrl']))
+                logger.debug(f'Feed {opml_feed.attrib["xmlUrl"]} added')
 
     if passed_feeds:
         for arg_feed in passed_feeds:
             subscribed_feeds.append(Feed(arg_feed))
-            logger.debug('Feed {} added'.format(arg_feed))
+            logger.debug(f'Feed {arg_feed} added')
 
     return subscribed_feeds
 
@@ -75,7 +75,7 @@ def _load_feeds(feed_files: list[str], passed_feeds: list[str], opml_files: list
 def _check_required_path(test_path: str) -> pathlib.Path:
     test_path = pathlib.Path(test_path).resolve()
     if not test_path.exists():
-        raise Exception('File {} does not exist'.format(test_path))
+        raise Exception(f'File {test_path} does not exist')
     return test_path
 
 
@@ -83,9 +83,9 @@ def map_fill_episode(ep: episode.Episode, destination: pathlib.Path) -> episode.
     try:
         ep.parse_rss_entry()
         ep.calculate_file_path(destination)
-        logger.log(9, 'Episode {} parsed'.format(ep.title))
+        logger.log(9, f'Episode {ep.title} parsed')
     except EpisodeException as e:
-        logger.error('{} in podcast {} failed: {}'.format(ep.title, ep.podcast, e))
+        logger.error(f'{ep.title} in podcast {ep.podcast} failed: {e}')
     return ep
 
 
@@ -93,7 +93,7 @@ def map_verify_episode_download(ep: episode.Episode) -> episode.Episode:
     try:
         ep.verify_download_file()
     except KeyError:
-        logger.error('Episode {} in podcast {} could not be checked'.format(ep.title, ep.podcast))
+        logger.error(f'Episode {ep.title} in podcast {ep.podcast} could not be checked')
     return ep
 
 
@@ -119,10 +119,10 @@ def map_ready_feed(in_feed: Feed) -> Optional[Feed]:
     try:
         in_feed.fetch_rss()
         in_feed.extract_episodes(-1)
-        logger.debug('Feed {} downloaded'.format(in_feed.title))
+        logger.debug(f'Feed {in_feed.title} downloaded')
         in_feed.feed = None
     except (FeedException, KeyError) as e:
-        logger.error('Feed {} could not be parsed: {}'.format(in_feed.url, e))
+        logger.error(f'Feed {in_feed.url} could not be parsed: {e}')
         return None
     return in_feed
 
@@ -153,7 +153,7 @@ def common_setup(context: click.Context) -> multiprocessing.Pool:
 
 def download_feeds(context: click.Context, pool: multiprocessing.Pool) -> list[Feed]:
     subscribed_feeds = _load_feeds(context.params['file'], context.params['feed'], context.params['opml'])
-    logger.info('{} feeds to be downloaded'.format(len(subscribed_feeds)))
+    logger.info(f'{len(subscribed_feeds)} feeds to be downloaded')
     subscribed_feeds = list(
         tqdm(pool.imap_unordered(
             map_ready_feed,
@@ -175,13 +175,13 @@ def scan_existing_files(context: click.Context) -> list[str]:
 def map_download_episode(ep: episode.Episode):
     try:
         ep.download_content()
-        logger.debug('Episode {} downloaded from podcast {}'.format(ep.title, ep.podcast))
+        logger.debug(f'Episode {ep.title} downloaded from podcast {ep.podcast}')
         try:
             writeTags(ep)
         except episode.EpisodeException as e:
-            logger.warning('Tags could not be written to {} in podcast {}: {}'.format(ep.title, ep.podcast, e))
+            logger.warning(f'Tags could not be written to {ep.title} in podcast {ep.podcast}: {e}')
     except episode.EpisodeException as e:
-        logger.error('{} failed to download: {}'.format(ep.title, e))
+        logger.error(f'{ep.title} failed to download: {e}')
 
 
 @click.group()
@@ -224,7 +224,7 @@ def bulk_check_episodes(context: click.Context) -> list[episode.Episode]:
     episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
     episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.PENDING, episode_queue))
     if context.params['max_downloads'] > 0:
-        logger.info('Reducing number of downloads to a maximum of {}'.format(context.params['max_downloads']))
+        logger.info(f'Reducing number of downloads to a maximum of {context.params["max_downloads"]}')
         episode_queue = episode_queue[:context.params['max_downloads']]
     return episode_queue
 
@@ -239,7 +239,7 @@ def verify(context: click.Context, **_):
     episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
     episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED, episode_queue))
 
-    logger.info('Commencing offline cache verification for {} episodes'.format(len(episode_queue)))
+    logger.info(f'Commencing offline cache verification for {len(episode_queue)} episodes')
 
     checked_episodes = list(tqdm(pool.imap_unordered(
         map_verify_episode_download,
@@ -249,8 +249,7 @@ def verify(context: click.Context, **_):
 
     with open('output.txt', 'w') as file:
         for ep in filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.CORRUPTED, checked_episodes):
-            logger.error(
-                'Episode {} in podcast {} has a mismatched filesize, presumed corrupted'.format(ep.title, ep.podcast))
+            logger.error(f'Episode {ep.title} in podcast {ep.podcast} has a mismatched filesize, presumed corrupted')
             file.write(str(ep.path) + '\n')
     _kill_pool(pool)
 
@@ -264,7 +263,7 @@ def tag(context: click.Context, **_):
 
     episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
     episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED, episode_queue))
-    logger.info('Writing tags to {} files'.format(len(episode_queue)))
+    logger.info(f'Writing tags to {len(episode_queue)} files')
 
     list(tqdm(pool.imap_unordered(
         writeTags,
