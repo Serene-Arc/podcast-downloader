@@ -154,12 +154,11 @@ def common_setup(context: click.Context) -> multiprocessing.Pool:
 def download_feeds(context: click.Context, pool: multiprocessing.Pool) -> list[Feed]:
     subscribed_feeds = _load_feeds(context.params['file'], context.params['feed'], context.params['opml'])
     logger.info(f'{len(subscribed_feeds)} feeds to be downloaded')
-    subscribed_feeds = list(
-        tqdm(pool.imap_unordered(
-            map_ready_feed,
-            subscribed_feeds),
-            total=len(subscribed_feeds),
-            disable=context.params['suppress_progress']))
+    subscribed_feeds = list(tqdm(
+        pool.imap_unordered(map_ready_feed, subscribed_feeds),
+        total=len(subscribed_feeds),
+        disable=context.params['suppress_progress'],
+    ))
     subscribed_feeds = list(filter(None, subscribed_feeds))
     return subscribed_feeds
 
@@ -212,11 +211,11 @@ def download(context: click.Context, **_):
     # downloads. this should limit/prevent that as much as possible to keep the average speed high
     random.shuffle(episode_queue)
 
-    list(tqdm(pool.imap_unordered(
-        map_download_episode,
-        episode_queue),
+    list(tqdm(
+        pool.imap_unordered(map_download_episode, episode_queue),
         total=len(episode_queue),
-        disable=context.params['suppress_progress']))
+        disable=context.params['suppress_progress'],
+    ))
     _kill_pool(pool)
 
 
@@ -237,15 +236,18 @@ def verify(context: click.Context, **_):
     pool = common_setup(context)
 
     episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
-    episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED, episode_queue))
+    episode_queue = list(filter(
+        lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED,
+        episode_queue,
+    ))
 
     logger.info(f'Commencing offline cache verification for {len(episode_queue)} episodes')
 
-    checked_episodes = list(tqdm(pool.imap_unordered(
-        map_verify_episode_download,
-        episode_queue),
+    checked_episodes = list(tqdm(
+        pool.imap_unordered(map_verify_episode_download, episode_queue),
         total=len(episode_queue),
-        disable=context.params['suppress_progress']))
+        disable=context.params['suppress_progress'],
+    ))
 
     with open('output.txt', 'w') as file:
         for ep in filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.CORRUPTED, checked_episodes):
@@ -262,14 +264,17 @@ def tag(context: click.Context, **_):
     pool = common_setup(context)
 
     episode_queue = [episode for feed in context.obj['feeds'] for episode in feed.feed_episodes]
-    episode_queue = list(filter(lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED, episode_queue))
+    episode_queue = list(filter(
+        lambda e: e.status == podcastdownloader.episode.EpisodeStatus.DOWNLOADED,
+        episode_queue,
+    ))
     logger.info(f'Writing tags to {len(episode_queue)} files')
 
-    list(tqdm(pool.imap_unordered(
-        writeTags,
-        episode_queue),
+    list(tqdm(
+        pool.imap_unordered(writeTags, episode_queue),
         total=len(episode_queue),
-        disable=context.params['suppress_progress']))
+        disable=context.params['suppress_progress'],
+    ))
     _kill_pool(pool)
 
 
