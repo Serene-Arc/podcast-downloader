@@ -1,3 +1,4 @@
+aiohttp
+click
 feedparser
-mutagen
-requests
+multidict

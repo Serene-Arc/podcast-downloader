@@ -17,7 +17,7 @@ def _check_required_path(file_path: str) -> Path:
     return result
 
 
-def load_feeds_from_text_file(feed_files: list[str]) -> list[str]:
+def load_feeds_from_text_file(feed_files: tuple[str]) -> list[str]:
     result = []
     feed_files = [_check_required_path(file) for file in feed_files]
     for feed_file in feed_files:
@@ -41,7 +41,7 @@ def _clean_text_line(in_string: str) -> Optional[str]:
         raise FeedException(f'Could not extract feed from {in_string.strip()}')
 
 
-def load_feeds_from_opml(opml_files: list[str]) -> list[str]:
+def load_feeds_from_opml(opml_files: tuple[str]) -> list[str]:
     result = []
     opml_files = [_check_required_path(file) for file in opml_files]
     for opml_loc in opml_files:

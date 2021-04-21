@@ -64,3 +64,14 @@ def test_determine_file_extension_from_headers(test_content_type: str, expected:
     test_dict = {'Content-Type': test_content_type}
     result = Episode._get_file_extension('', test_dict)
     assert result == expected
+
+
+@pytest.mark.parametrize(('test_name', 'expected'), (
+    ('test', 'test'),
+    ('te/st', 'test'),
+    ('test/test', 'testtest'),
+    ('test\0', 'test'),
+))
+def test_clean_name(test_name: str, expected: str):
+    result = Episode._clean_name(test_name)
+    assert result == expected
