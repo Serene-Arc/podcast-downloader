@@ -34,10 +34,6 @@ class Episode:
         )
         return result
 
-    def _calculate_path(self, destination: Path, extension: str):
-        file_name = self.title + extension
-        self.file_path = Path(destination, self.podcast_name, file_name)
-
     @staticmethod
     def _clean_name(name: str) -> str:
         name = re.sub(r'(\0|/)', '', name)
@@ -66,11 +62,20 @@ class Episode:
         else:
             raise EpisodeException(f'Could not determine file extension for download {url}')
 
-    async def download(self, destination: Path, session: aiohttp.ClientSession):
+    async def calculate_path(self, destination: Path, session: aiohttp.ClientSession):
         try:
             async with session.get(self.url) as response:
                 file_extension = self._get_file_extension(self.url, response.headers)
-                self._calculate_path(destination, file_extension)
+                file_name = self.title + file_extension
+                self.file_path = Path(destination, self.podcast_name, file_name)
+        except (aiohttp.client_exceptions.ClientError, EpisodeException) as e:
+            raise EpisodeException(f'Failed to determine path for "{self.title}" from "{self.podcast_name}": {e}')
+
+    async def download(self, session: aiohttp.ClientSession):
+        if not self.file_path:
+            raise EpisodeException('Episode has no calculated path')
+        try:
+            async with session.get(self.url) as response:
                 if not self.file_path.exists():
                     data = await response.content.read()
                     self.file_path.parent.mkdir(exist_ok=True, parents=True)

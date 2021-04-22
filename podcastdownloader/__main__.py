@@ -40,7 +40,7 @@ _common_options = [
 ]
 
 
-async def fill_individual_feed(in_queue: Queue, out_queue: Queue, session: aiohttp.ClientSession):
+async def fill_individual_feed(in_queue: Queue, out_queue: Queue, destination: Path, session: aiohttp.ClientSession):
     while not in_queue.empty():
         podcast = await in_queue.get()
         if podcast is None:
@@ -48,6 +48,8 @@ async def fill_individual_feed(in_queue: Queue, out_queue: Queue, session: aioht
         logger.debug(f'Beginning retrieval for {podcast.url}')
         try:
             await podcast.download_feed(session)
+            async for episode in podcast.episodes:
+                await episode.calculate_path(destination, session)
         except PodcastException as e:
             logger.error(e)
         except Exception:
@@ -59,14 +61,14 @@ async def fill_individual_feed(in_queue: Queue, out_queue: Queue, session: aioht
         in_queue.task_done()
 
 
-async def download_individual_episode(in_queue: Queue, destination: Path, session: aiohttp.ClientSession):
+async def download_individual_episode(in_queue: Queue, session: aiohttp.ClientSession):
     while not in_queue.empty():
         episode = await in_queue.get()
         if episode is None:
             break
         logger.debug(f'Attempting download of episode {episode.title} in {episode.podcast_name}')
         try:
-            await episode.download(destination, session)
+            await episode.download(session)
         except EpisodeException as e:
             logger.error(e)
         in_queue.task_done()
@@ -109,18 +111,27 @@ async def download_episodes(all_feeds: set[str], destination: Path, threads: int
     [await unfilled_podcasts.put(Podcast(url)) for url in all_feeds]
     async with aiohttp.ClientSession() as session:
         feed_fillers = [asyncio.create_task(
-            fill_individual_feed(unfilled_podcasts, filled_podcasts, session)
+            fill_individual_feed(unfilled_podcasts, filled_podcasts, destination, session)
         ) for _ in range(1, threads)]
         await asyncio.gather(*feed_fillers)
         await unfilled_podcasts.join()
         logger.info('All feeds filled')
+
         podcasts = []
         while not filled_podcasts.empty():
             podcasts.append(filled_podcasts.get_nowait())
-        [await episodes.put(ep) for feed in podcasts for ep in feed.episodes]
+        unfilled_episodes = list(filter(
+            lambda e: not e.file_path.exists(),
+            [ep for pod in podcasts for ep in pod.episodes],
+        ))
+        logger.info(f'{len(unfilled_episodes)} to download')
+
+        [await episodes.put(ep) for ep in unfilled_episodes]
+
         episode_downloaders = [asyncio.create_task(
-            download_individual_episode(episodes, destination, session)
+            download_individual_episode(episodes, session)
         ) for _ in range(1, threads)]
+
         await asyncio.gather(*episode_downloaders)
         await episodes.join()
 
