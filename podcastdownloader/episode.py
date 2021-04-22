@@ -49,10 +49,12 @@ class Episode:
             raise EpisodeException('Could not find a valid link')
 
     @staticmethod
-    def _get_file_extension(url: str, headers: CIMultiDictProxy) -> str:
+    async def _get_file_extension(url: str, session: aiohttp.ClientSession) -> str:
         url = urllib.parse.urlsplit(url).path
         mime_type = mimetypes.guess_type(url)[0]
         if not mime_type:
+            async with session.get(url) as response:
+                headers = response.headers
             mime_type = headers.get('Content-Type')
         if not mime_type:
             raise EpisodeException(f'Could not determine MIME type for URL {url}')
@@ -64,10 +66,9 @@ class Episode:
 
     async def calculate_path(self, destination: Path, session: aiohttp.ClientSession):
         try:
-            async with session.get(self.url) as response:
-                file_extension = self._get_file_extension(self.url, response.headers)
-                file_name = self.title + file_extension
-                self.file_path = Path(destination, self.podcast_name, file_name)
+            file_extension = await self._get_file_extension(self.url, session)
+            file_name = self.title + file_extension
+            self.file_path = Path(destination, self.podcast_name, file_name)
         except (aiohttp.client_exceptions.ClientError, EpisodeException) as e:
             raise EpisodeException(f'Failed to determine path for "{self.title}" from "{self.podcast_name}": {e}')
 
