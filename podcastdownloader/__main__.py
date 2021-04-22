@@ -13,6 +13,7 @@ import click
 import podcastdownloader.utility_functions as util
 from podcastdownloader.exceptions import EpisodeException, PodcastException
 from podcastdownloader.podcast import Podcast
+from podcastdownloader.writer import write_episode_playlist
 
 logger = logging.getLogger()
 
@@ -48,7 +49,7 @@ async def fill_individual_feed(in_queue: Queue, out_queue: Queue, destination: P
         logger.debug(f'Beginning retrieval for {podcast.url}')
         try:
             await podcast.download_feed(session)
-            async for episode in podcast.episodes:
+            for episode in podcast.episodes:
                 await episode.calculate_path(destination, session)
         except PodcastException as e:
             logger.error(e)
@@ -88,7 +89,16 @@ def cli():
 @cli.command('download')
 @add_common_options
 @click.option('-t', '--threads', type=int, default=10)
-def cli_download(destination: str, verbose: int, feed: tuple[str], file: tuple[str], opml: tuple[str], threads: int):
+@click.option('-w', '--write-playlist', type=click.Choice(('m3u',)), default=(), multiple=True)
+def cli_download(
+        destination: str,
+        verbose: int,
+        feed: tuple[str],
+        file: tuple[str],
+        opml: tuple[str],
+        threads: int,
+        write_playlist: tuple[str],
+):
     _setup_logging(verbose)
     destination = Path(destination).expanduser().resolve()
     if not destination.exists():
@@ -98,13 +108,13 @@ def cli_download(destination: str, verbose: int, feed: tuple[str], file: tuple[s
     all_feeds = set(itertools.chain(feed, util.load_feeds_from_text_file(file), util.load_feeds_from_opml(opml)))
     logger.info(f'{len(all_feeds)} feeds found')
     if all_feeds:
-        asyncio.run(download_episodes(all_feeds, destination, threads))
+        asyncio.run(download_episodes(all_feeds, destination, threads, write_playlist))
     else:
         logger.error('No feeds have been provided')
     logger.info('Program Complete')
 
 
-async def download_episodes(all_feeds: set[str], destination: Path, threads: int):
+async def download_episodes(all_feeds: set[str], destination: Path, threads: int, playlist_formats: tuple[str]):
     unfilled_podcasts = Queue()
     filled_podcasts = Queue()
     episodes = Queue()
@@ -119,12 +129,15 @@ async def download_episodes(all_feeds: set[str], destination: Path, threads: int
 
         podcasts = []
         while not filled_podcasts.empty():
-            podcasts.append(filled_podcasts.get_nowait())
+            podcast = filled_podcasts.get_nowait()
+            write_episode_playlist(podcast, playlist_formats)
+            podcasts.append(podcast)
+
         unfilled_episodes = list(filter(
             lambda e: not e.file_path.exists(),
             [ep for pod in podcasts for ep in pod.episodes],
         ))
-        logger.info(f'{len(unfilled_episodes)} to download')
+        logger.info(f'{len(unfilled_episodes)} episodes to download')
 
         [await episodes.put(ep) for ep in unfilled_episodes]
 
