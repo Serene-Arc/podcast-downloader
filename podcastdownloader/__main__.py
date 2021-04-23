@@ -3,6 +3,7 @@
 import asyncio
 import itertools
 import logging
+import random
 import sys
 from asyncio.queues import Queue
 from pathlib import Path
@@ -138,6 +139,8 @@ async def download_episodes(all_feeds: set[str], destination: Path, threads: int
             [ep for pod in podcasts for ep in pod.episodes],
         ))
         logger.info(f'{len(unfilled_episodes)} episodes to download')
+
+        random.shuffle(unfilled_episodes)
 
         [await episodes.put(ep) for ep in unfilled_episodes]
 
