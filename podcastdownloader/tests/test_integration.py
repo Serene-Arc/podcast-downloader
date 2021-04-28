@@ -20,7 +20,6 @@ def test_download_no_feeds(test_args: list[str], tmp_path: Path):
 
 
 @pytest.mark.parametrize('test_args', (
-    ['-f', 'http://www.wizards.com/dnd/rsspodcast1.xml'],
     ['-f', 'https://rss.art19.com/wecrashed'],
 ))
 def test_download_single_feed(test_args: list[str], tmp_path: Path):

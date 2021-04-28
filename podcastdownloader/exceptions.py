@@ -11,3 +11,7 @@ class FeedException(PodcastException):
 
 class EpisodeException(PodcastException):
     pass
+
+
+class TagEngineError(PodcastException):
+    pass

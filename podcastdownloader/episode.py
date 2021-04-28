@@ -10,6 +10,7 @@ from typing import Optional
 
 import aiohttp
 import aiohttp.client_exceptions
+import mutagen
 from multidict import CIMultiDictProxy
 
 from podcastdownloader.exceptions import EpisodeException
@@ -18,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class Episode:
-    def __init__(self, title_name: str, episode_url: str, podcast_name: str):
+    def __init__(self, title_name: str, episode_url: str, podcast_name: str, feed: dict):
         self.title = self._clean_name(title_name)
         self.url = episode_url
         self.podcast_name = podcast_name
         self.file_path: Optional[Path] = None
+        self.feed = feed
 
     @staticmethod
     def parse_dict(feed_dict: dict, podcast_name: str) -> 'Episode':
@@ -31,6 +33,7 @@ class Episode:
             feed_dict['title'],
             episode_url,
             podcast_name,
+            feed_dict,
         )
         return result
 
@@ -83,6 +86,11 @@ class Episode:
                     with open(self.file_path, 'wb') as file:
                         file.write(data)
                     logger.info(f'Downloaded {self.title} in podcast {self.podcast_name}')
+                    try:
+                        from podcastdownloader.tag_engine import TagEngine
+                        TagEngine.tag_episode(self)
+                    except mutagen.MutagenError as e:
+                        logger.error(f'Failed to tag episode {self.title}: {e}')
                 else:
                     logger.debug(f'File already exists at {self.file_path}')
         except aiohttp.client_exceptions.ClientError as e:
