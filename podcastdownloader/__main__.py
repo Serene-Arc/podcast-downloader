@@ -7,6 +7,7 @@ import random
 import sys
 from asyncio.queues import Queue
 from pathlib import Path
+from typing import Optional
 
 import aiohttp
 import click
@@ -89,15 +90,17 @@ def cli():
 
 @cli.command('download')
 @add_common_options
+@click.option('-l', '--limit', type=int, default=None)
 @click.option('-t', '--threads', type=int, default=10)
 @click.option('-w', '--write-playlist', type=click.Choice(('m3u',)), default=(), multiple=True)
 def cli_download(
         destination: str,
-        verbose: int,
         feed: tuple[str],
         file: tuple[str],
+        limit: Optional[int],
         opml: tuple[str],
         threads: int,
+        verbose: int,
         write_playlist: tuple[str],
 ):
     _setup_logging(verbose)
@@ -109,13 +112,19 @@ def cli_download(
     all_feeds = set(itertools.chain(feed, util.load_feeds_from_text_file(file), util.load_feeds_from_opml(opml)))
     logger.info(f'{len(all_feeds)} feeds found')
     if all_feeds:
-        asyncio.run(download_episodes(all_feeds, destination, threads, write_playlist))
+        asyncio.run(download_episodes(all_feeds, destination, threads, write_playlist, limit))
     else:
         logger.error('No feeds have been provided')
     logger.info('Program Complete')
 
 
-async def download_episodes(all_feeds: set[str], destination: Path, threads: int, playlist_formats: tuple[str]):
+async def download_episodes(
+    all_feeds: set[str],
+    destination: Path,
+    threads: int,
+    playlist_formats: tuple[str],
+    limit: Optional[int],
+):
     unfilled_podcasts = Queue()
     filled_podcasts = Queue()
     episodes = Queue()
@@ -133,6 +142,11 @@ async def download_episodes(all_feeds: set[str], destination: Path, threads: int
             podcast = filled_podcasts.get_nowait()
             write_episode_playlist(podcast, playlist_formats)
             podcasts.append(podcast)
+
+        if limit:
+            logger.info(f'Limiting episodes per podcast to {limit} entries')
+            for podcast in podcasts:
+                podcast.episodes = podcast.episodes[:limit]
 
         unfilled_episodes = list(filter(
             lambda e: not e.file_path.exists(),
