@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 # coding=utf-8
+import asyncio
 
+import aiohttp
 import pytest
 
 from podcastdownloader.episode import Episode
 from podcastdownloader.exceptions import EpisodeException
+
+
+@pytest.fixture(scope='session')
+def client_session() -> aiohttp.ClientSession:
+    out = aiohttp.ClientSession()
+    return out
 
 
 @pytest.mark.parametrize(('test_link_dict', 'expected'), (
@@ -52,17 +60,8 @@ def test_episode_find_url_bad(test_link_dict: list[dict]):
     ('https://www.example.com/test.mp3?test=value#test', '.mp3'),
     ('https://www.example.com/test.aac', '.aac'),
 ))
-def test_determine_file_extension_from_url(test_url: str, expected: str):
-    result = Episode._get_file_extension(test_url, {})
-    assert result == expected
-
-
-@pytest.mark.parametrize(('test_content_type', 'expected'), (
-    ('audio/mpeg', '.mp3'),
-))
-def test_determine_file_extension_from_headers(test_content_type: str, expected: str):
-    test_dict = {'Content-Type': test_content_type}
-    result = Episode._get_file_extension('', test_dict)
+def test_determine_file_extension_from_url(test_url: str, expected: str, client_session):
+    result = asyncio.run(Episode._get_file_extension(test_url, client_session))
     assert result == expected
 
 
