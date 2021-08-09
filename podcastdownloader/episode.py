@@ -45,16 +45,20 @@ class Episode:
     @staticmethod
     def _find_url(feed_dict: dict) -> str:
         mime_type_regex = re.compile(r'^audio.*')
-        valid_urls = list(filter(lambda u: re.match(mime_type_regex, u['type']), feed_dict['links']))
+        try:
+            valid_urls = list(filter(lambda u: re.match(mime_type_regex, u['type']), feed_dict['links']))
+        except KeyError:
+            valid_urls = None
         if valid_urls:
             return valid_urls[0].get('href')
         else:
-            raise EpisodeException('Could not find a valid link')
+            raise EpisodeException(f'Could not find a valid link for episode {feed_dict["title"]}')
 
     @staticmethod
     async def _get_file_extension(url: str, session: aiohttp.ClientSession) -> str:
         url = urllib.parse.urlsplit(url).path
-        mime_type = mimetypes.guess_type(url)[0]
+        mime_type = mimetypes.guess_type(url)
+        mime_type = mime_type[0]
         if not mime_type:
             async with session.get(url) as response:
                 headers = response.headers

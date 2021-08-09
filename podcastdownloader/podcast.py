@@ -29,7 +29,7 @@ class Podcast:
             async with session.get(self.url) as response:
                 feed_data = await response.content.read()
                 if response.status != 200:
-                    raise FeedException(f'Failed to download feed from {self.url}')
+                    raise FeedException(f'Failed to download feed from {self.url}: Response code {response.status}')
         except aiohttp.client_exceptions.ClientError as e:
             raise FeedException(f'Failed to download feed from {self.url}: {e}')
         feed = feedparser.parse(feed_data)

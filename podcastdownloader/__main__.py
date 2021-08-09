@@ -52,7 +52,10 @@ async def fill_individual_feed(in_queue: Queue, out_queue: Queue, destination: P
         try:
             await podcast.download_feed(session)
             for episode in podcast.episodes:
-                await episode.calculate_path(destination, session)
+                try:
+                    await episode.calculate_path(destination, session)
+                except TypeError:
+                    logger.error(f'Failed to parse {episode.title} in {episode.podcast_name}')
         except PodcastException as e:
             logger.error(e)
         except Exception:
@@ -149,7 +152,7 @@ async def download_episodes(
                 podcast.episodes = podcast.episodes[:limit]
 
         unfilled_episodes = list(filter(
-            lambda e: not e.file_path.exists(),
+            lambda e: not e.file_path or not e.file_path.exists(),
             [ep for pod in podcasts for ep in pod.episodes],
         ))
         logger.info(f'{len(unfilled_episodes)} episodes to download')
