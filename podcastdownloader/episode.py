@@ -39,7 +39,7 @@ class Episode:
 
     @staticmethod
     def _clean_name(name: str) -> str:
-        name = re.sub(r'(\0|/)', '', name)
+        name = re.sub(r'([\0/])', '', name)
         return name
 
     @staticmethod
