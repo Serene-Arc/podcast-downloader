@@ -22,7 +22,7 @@ logger = logging.getLogger()
 
 def _setup_logging(verbosity: int):
     logger.setLevel(1)
-    stream = logging.StreamHandler(sys.stdout)
+    stream = logging.StreamHandler(sys.stderr)
     formatter = logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s] - %(message)s')
     stream.setFormatter(formatter)
     logger.addHandler(stream)
