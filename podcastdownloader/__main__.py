@@ -16,7 +16,6 @@ import podcastdownloader.utility_functions as util
 from podcastdownloader.exceptions import EpisodeException, PodcastException
 from podcastdownloader.podcast import Podcast
 from podcastdownloader.writer import write_episode_playlist
-from http.cookiejar import MozillaCookieJar
 
 logger = logging.getLogger()
 
@@ -33,15 +32,6 @@ def _setup_logging(verbosity: int):
         stream.setLevel(logging.INFO)
     logging.getLogger('asyncio').setLevel(logging.CRITICAL)
     logging.getLogger('chardet').setLevel(logging.CRITICAL)
-
-
-_common_options = [
-    click.argument('destination', type=str),
-    click.option('-v', '--verbose', type=int, default=0, count=True),
-    click.option('-f', '--feed', type=str, multiple=True, default=[]),
-    click.option('-F', '--file', type=str, multiple=True, default=[]),
-    click.option('--opml', type=str, multiple=True, default=[]),
-]
 
 
 async def fill_individual_feed(in_queue: Queue, out_queue: Queue, destination: Path, session: aiohttp.ClientSession):
@@ -81,21 +71,19 @@ async def download_individual_episode(in_queue: Queue, session: aiohttp.ClientSe
         in_queue.task_done()
 
 
-def add_common_options(func):
-    for option in _common_options:
-        func = option(func)
-    return func
-
-
 @click.group()
 def cli():
     pass
 
 
 @cli.command('download')
-@add_common_options
+@click.argument('destination', type=str)
+@click.option('--opml', type=str, multiple=True, default=[])
+@click.option('-f', '--feed', type=str, multiple=True, default=[])
+@click.option('-F', '--file', type=str, multiple=True, default=[])
 @click.option('-l', '--limit', type=int, default=None)
 @click.option('-t', '--threads', type=int, default=10)
+@click.option('-v', '--verbose', type=int, default=0, count=True)
 @click.option('-w', '--write-playlist', type=click.Choice(('m3u',)), default=(), multiple=True)
 def cli_download(
         destination: str,
@@ -140,9 +128,10 @@ async def download_episodes(
                 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0',
             },
     ) as session:
-        feed_fillers = [asyncio.create_task(
-            fill_individual_feed(unfilled_podcasts, filled_podcasts, destination, session)
-        ) for _ in range(1, threads)]
+        feed_fillers = [
+            asyncio.create_task(fill_individual_feed(unfilled_podcasts, filled_podcasts, destination, session))
+            for _ in range(1, threads)
+        ]
         await asyncio.gather(*feed_fillers)
         await unfilled_podcasts.join()
         logger.info('All feeds filled')

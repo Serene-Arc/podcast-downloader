@@ -23,13 +23,13 @@ def load_feeds_from_text_file(feed_files: tuple[str]) -> list[str]:
     for feed_file in feed_files:
         with open(Path(feed_file), 'r') as feed:
             for line in feed.readlines():
-                if parsed_line := _clean_text_line(line):
+                if parsed_line := clean_text_line(line):
                     result.append(parsed_line)
                     logger.debug(f'Feed {parsed_line} added')
     return result
 
 
-def _clean_text_line(in_string: str) -> Optional[str]:
+def clean_text_line(in_string: str) -> Optional[str]:
     non_feed_pattern = re.compile(r'^\s*(#.*)?$')
     if re.match(non_feed_pattern, in_string):
         return None

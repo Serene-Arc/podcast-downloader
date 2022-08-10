@@ -21,6 +21,7 @@ def test_download_no_feeds(test_args: list[str], tmp_path: Path):
 
 @pytest.mark.parametrize('test_args', (
     ['-f', 'https://rss.art19.com/wecrashed'],
+    ['-f', 'http://feeds.libsyn.com/92106/rss', '-l', '1'],  # knowledge fight
 ))
 def test_download_single_feed(test_args: list[str], tmp_path: Path):
     runner = CliRunner()

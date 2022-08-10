@@ -16,7 +16,7 @@ import podcastdownloader.utility_functions as util
     ('  # test', None),
 ))
 def test_clean_text_line_non_feeds(test_input_string: str, expected: str):
-    result = util._clean_text_line(test_input_string)
+    result = util.clean_text_line(test_input_string)
     assert result == expected
 
 
@@ -29,5 +29,5 @@ def test_clean_text_line_non_feeds(test_input_string: str, expected: str):
     ('https://www.example.com/test/feed.rss\t # test comment', 'https://www.example.com/test/feed.rss'),
 ))
 def test_clean_text_line_good(test_input_string: str, expected: str):
-    result = util._clean_text_line(test_input_string)
+    result = util.clean_text_line(test_input_string)
     assert result == expected
