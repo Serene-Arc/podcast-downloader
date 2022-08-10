@@ -47,7 +47,10 @@ def test_episode_find_url(test_link_dict: list[dict], expected: str):
     }],
 ))
 def test_episode_find_url_bad(test_link_dict: list[dict]):
-    test_dict = {'links': test_link_dict, }
+    test_dict = {
+        'links': test_link_dict,
+        'title': 'test',
+    }
     with pytest.raises(EpisodeException):
         Episode._find_url(test_dict)
 
