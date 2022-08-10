@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import asyncio
+import argparse
 import itertools
 import logging
 import random
@@ -10,7 +11,6 @@ from pathlib import Path
 from typing import Optional
 
 import aiohttp
-import click
 
 import podcastdownloader.utility_functions as util
 from podcastdownloader.exceptions import EpisodeException, PodcastException
@@ -18,6 +18,8 @@ from podcastdownloader.podcast import Podcast
 from podcastdownloader.writer import write_episode_playlist
 
 logger = logging.getLogger()
+
+parser = argparse.ArgumentParser()
 
 
 def _setup_logging(verbosity: int):
@@ -71,40 +73,34 @@ async def download_individual_episode(in_queue: Queue, session: aiohttp.ClientSe
         in_queue.task_done()
 
 
-@click.group()
-def cli():
-    pass
+def add_parser_options(parser: argparse.ArgumentParser):
+    parser.add_argument('destination')
+    parser.add_argument('-f', '--feed', action='append', default=[])
+    parser.add_argument('-F', '--file', action='append', default=[])
+    parser.add_argument('-l', '--limit', type=int, default=None)
+    parser.add_argument('-t', '--threads', type=int, default=10)
+    parser.add_argument('-w', '--write-playlist', action='append', choices=['m3u', ], default=[])
+    parser.add_argument('-v', '--verbose', action='count', default=0)
+    parser.add_argument('--opml', action='append', default=[])
 
 
-@cli.command('download')
-@click.argument('destination', type=str)
-@click.option('--opml', type=str, multiple=True, default=[])
-@click.option('-f', '--feed', type=str, multiple=True, default=[])
-@click.option('-F', '--file', type=str, multiple=True, default=[])
-@click.option('-l', '--limit', type=int, default=None)
-@click.option('-t', '--threads', type=int, default=10)
-@click.option('-v', '--verbose', type=int, default=0, count=True)
-@click.option('-w', '--write-playlist', type=click.Choice(('m3u',)), default=(), multiple=True)
-def cli_download(
-        destination: str,
-        feed: tuple[str],
-        file: tuple[str],
-        limit: Optional[int],
-        opml: tuple[str],
-        threads: int,
-        verbose: int,
-        write_playlist: tuple[str],
-):
-    _setup_logging(verbose)
-    destination = Path(destination).expanduser().resolve()
+def main(args: argparse.Namespace):
+    _setup_logging(args.verbose)
+    destination = Path(args.destination).expanduser().resolve()
     if not destination.exists():
         logger.warning(f'Specified destination {destination} does not exist, creating it now')
         destination.mkdir(parents=True)
 
-    all_feeds = set(itertools.chain(feed, util.load_feeds_from_text_file(file), util.load_feeds_from_opml(opml)))
+    all_feeds = set(
+        itertools.chain(
+            args.feed,
+            util.load_feeds_from_text_file(args.file),
+            util.load_feeds_from_opml(args.opml),
+        ),
+    )
     logger.info(f'{len(all_feeds)} feeds found')
     if all_feeds:
-        asyncio.run(download_episodes(all_feeds, destination, threads, write_playlist, limit))
+        asyncio.run(download_episodes(all_feeds, destination, args.threads, args.write_playlist, args.limit))
     else:
         logger.error('No feeds have been provided')
     logger.info('Program Complete')
@@ -167,4 +163,6 @@ async def download_episodes(
 
 
 if __name__ == '__main__':
-    cli()
+    add_parser_options(parser)
+    cli_args = parser.parse_args()
+    main(cli_args)
