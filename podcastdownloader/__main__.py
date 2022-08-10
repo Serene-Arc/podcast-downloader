@@ -131,7 +131,9 @@ async def download_episodes(
     unfilled_podcasts = Queue()
     filled_podcasts = Queue()
     episodes = Queue()
-    [await unfilled_podcasts.put(Podcast(url)) for url in all_feeds]
+    for url in all_feeds:
+        await unfilled_podcasts.put(Podcast(url))
+
     async with aiohttp.ClientSession() as session:
         feed_fillers = [asyncio.create_task(
             fill_individual_feed(unfilled_podcasts, filled_podcasts, destination, session)
@@ -159,7 +161,8 @@ async def download_episodes(
 
         random.shuffle(unfilled_episodes)
 
-        [await episodes.put(ep) for ep in unfilled_episodes]
+        for ep in unfilled_episodes:
+            await episodes.put(ep)
 
         episode_downloaders = [asyncio.create_task(
             download_individual_episode(episodes, session)
