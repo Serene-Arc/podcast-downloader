@@ -16,6 +16,7 @@ import podcastdownloader.utility_functions as util
 from podcastdownloader.exceptions import EpisodeException, PodcastException
 from podcastdownloader.podcast import Podcast
 from podcastdownloader.writer import write_episode_playlist
+from http.cookiejar import MozillaCookieJar
 
 logger = logging.getLogger()
 
@@ -134,7 +135,11 @@ async def download_episodes(
     for url in all_feeds:
         await unfilled_podcasts.put(Podcast(url))
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(
+            headers={
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0',
+            },
+    ) as session:
         feed_fillers = [asyncio.create_task(
             fill_individual_feed(unfilled_podcasts, filled_podcasts, destination, session)
         ) for _ in range(1, threads)]
