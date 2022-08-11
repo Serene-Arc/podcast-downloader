@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # coding=utf-8
 import asyncio
+from pathlib import Path
 
 import aiohttp
 import pytest
-
+import hashlib
+from unittest.mock import MagicMock
 from podcastdownloader.episode import Episode
-from podcastdownloader.exceptions import EpisodeException
+from podcastdownloader.exceptions import EpisodeException, TagEngineError
 
 
 @pytest.fixture(scope='session')
@@ -77,3 +79,34 @@ def test_determine_file_extension_from_url(test_url: str, expected: str, client_
 def test_clean_name(test_name: str, expected: str):
     result = Episode._clean_name(test_name)
     assert result == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ('test_url',
+     'expected_hash'),
+    (('https://sphinx.acast.com/p/open/s/5fc574d8d429ec34a8292b1c/e/621d127983ff8c00129dd5c6/media.mp3',
+      ''),
+     ('https://b0c2ddc39d13e1c0ddad-93a52a5bc9e7cc06050c1a999beb3694.'
+      'ssl.cf1.rackcdn.com/20847573b558163630f6343f3707b637-80.png',
+     '69cce47bd5ef08359a1def41f4cd132b',
+      ),
+     ))
+async def test_episode_download(test_url: str, expected_hash: str, tmp_path: Path):
+    async with aiohttp.ClientSession(
+        headers={
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0',
+        },
+    ) as session:
+        mock_episode = MagicMock()
+        mock_episode.url = test_url
+        out_path = Path(tmp_path, 'test')
+        mock_episode.file_path = out_path
+        try:
+            await Episode.download(mock_episode, session)
+        except TagEngineError:
+            pass
+        test_hash = hashlib.md5()
+        test_hash.update(out_path.read_bytes())
+        test_hash = test_hash.hexdigest()
+        assert test_hash == expected_hash

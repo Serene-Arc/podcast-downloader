@@ -11,8 +11,6 @@ from typing import Optional
 import aiohttp
 import aiohttp.client_exceptions
 import mutagen
-from multidict import CIMultiDictProxy
-
 from podcastdownloader.exceptions import EpisodeException
 
 logger = logging.getLogger(__name__)
@@ -85,6 +83,8 @@ class Episode:
         try:
             async with session.get(self.url) as response:
                 if not self.file_path.exists():
+                    if response.status != 200:
+                        raise EpisodeException(f'Failed to download from {self.url}: Reponse code {response.status}')
                     data = await response.content.read()
                     self.file_path.parent.mkdir(exist_ok=True, parents=True)
                     with open(self.file_path, 'wb') as file:
