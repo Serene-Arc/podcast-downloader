@@ -29,12 +29,12 @@ class Podcast:
             async with session.get(self.url) as response:
                 feed_data = await response.content.read()
                 if response.status != 200:
-                    raise FeedException(f'Failed to download feed from {self.url}: Response code {response.status}')
+                    raise FeedException(f"Failed to download feed from {self.url}: Response code {response.status}")
         except aiohttp.client_exceptions.ClientError as e:
-            raise FeedException(f'Failed to download feed from {self.url}: {e}')
+            raise FeedException(f"Failed to download feed from {self.url}: {e}")
         feed = feedparser.parse(feed_data)
-        if feed['bozo']:
-            raise FeedException(f'Feed from {self.url} was malformed')
+        if feed["bozo"]:
+            raise FeedException(f"Feed from {self.url} was malformed")
         self.feed = feed
-        self.name = feed['feed']['title']
-        self.episodes = [Episode.parse_dict(entry, self.name) for entry in self.feed['entries']]
+        self.name = feed["feed"]["title"]
+        self.episodes = [Episode.parse_dict(entry, self.name) for entry in self.feed["entries"]]

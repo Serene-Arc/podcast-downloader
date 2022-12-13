@@ -11,6 +11,7 @@ from typing import Optional
 import aiohttp
 import aiohttp.client_exceptions
 import mutagen
+
 from podcastdownloader.exceptions import EpisodeException
 
 logger = logging.getLogger(__name__)
@@ -25,10 +26,10 @@ class Episode:
         self.feed = feed
 
     @staticmethod
-    def parse_dict(feed_dict: dict, podcast_name: str) -> 'Episode':
+    def parse_dict(feed_dict: dict, podcast_name: str) -> "Episode":
         episode_url = Episode._find_url(feed_dict)
         result = Episode(
-            feed_dict['title'],
+            feed_dict["title"],
             episode_url,
             podcast_name,
             feed_dict,
@@ -37,18 +38,18 @@ class Episode:
 
     @staticmethod
     def _clean_name(name: str) -> str:
-        name = re.sub(r'([\0/])', '', name)
+        name = re.sub(r"([\0/])", "", name)
         return name
 
     @staticmethod
     def _find_url(feed_dict: dict) -> str:
-        mime_type_regex = re.compile(r'^audio.*')
+        mime_type_regex = re.compile(r"^audio.*")
         try:
-            valid_urls = list(filter(lambda u: re.match(mime_type_regex, u['type']), feed_dict['links']))
+            valid_urls = list(filter(lambda u: re.match(mime_type_regex, u["type"]), feed_dict["links"]))
         except KeyError:
             valid_urls = None
         if valid_urls:
-            return valid_urls[0].get('href')
+            return valid_urls[0].get("href")
         else:
             raise EpisodeException(f'Could not find a valid link for episode {feed_dict["title"]}')
 
@@ -60,14 +61,14 @@ class Episode:
         if not mime_type:
             async with session.get(url) as response:
                 headers = response.headers
-            mime_type = headers.get('Content-Type')
+            mime_type = headers.get("Content-Type")
         if not mime_type:
-            raise EpisodeException(f'Could not determine MIME type for URL {url}')
+            raise EpisodeException(f"Could not determine MIME type for URL {url}")
         result = mimetypes.guess_extension(mime_type)
         if result:
             return result
         else:
-            raise EpisodeException(f'Could not determine file extension for download {url}')
+            raise EpisodeException(f"Could not determine file extension for download {url}")
 
     async def calculate_path(self, destination: Path, session: aiohttp.ClientSession):
         try:
@@ -79,23 +80,24 @@ class Episode:
 
     async def download(self, session: aiohttp.ClientSession):
         if not self.file_path:
-            raise EpisodeException('Episode has no calculated path')
+            raise EpisodeException("Episode has no calculated path")
         try:
             async with session.get(self.url) as response:
                 if not self.file_path.exists():
                     if response.status != 200:
-                        raise EpisodeException(f'Failed to download from {self.url}: Reponse code {response.status}')
+                        raise EpisodeException(f"Failed to download from {self.url}: Reponse code {response.status}")
                     data = await response.content.read()
                     self.file_path.parent.mkdir(exist_ok=True, parents=True)
-                    with open(self.file_path, 'wb') as file:
+                    with open(self.file_path, "wb") as file:
                         file.write(data)
-                    logger.info(f'Downloaded {self.title} in podcast {self.podcast_name}')
+                    logger.info(f"Downloaded {self.title} in podcast {self.podcast_name}")
                     try:
                         from podcastdownloader.tag_engine import TagEngine
+
                         TagEngine.tag_episode(self)
                     except mutagen.MutagenError as e:
-                        logger.error(f'Failed to tag episode {self.title}: {e}')
+                        logger.error(f"Failed to tag episode {self.title}: {e}")
                 else:
-                    logger.debug(f'File already exists at {self.file_path}')
+                    logger.debug(f"File already exists at {self.file_path}")
         except aiohttp.client_exceptions.ClientError as e:
             raise EpisodeException(f'Failed to download "{self.title}" from "{self.podcast_name}": {e}')
