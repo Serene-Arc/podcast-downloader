@@ -1,7 +1,10 @@
 # podcast-downloader
 
-This is a simple tool for downloading all the available episodes in an RSS feed
-to disk, where they can be listened to offline.
+This is a simple tool for downloading all the available episodes in an RSS
+feed to disk, where they can be listened to offline. The rationale of this
+tool is simple: I wanted a tool that doesn't attempt to sort or change the
+files on disk while also using as much bandwidth as possible, maxing out
+my connection if possible. This tool is the result of that.
 
 Firstly, Python 3 must be installed, then the requirements must be installed.
 These are documented in `requirements.txt` and can be installed via the command
