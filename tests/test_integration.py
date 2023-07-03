@@ -23,7 +23,13 @@ def test_download_no_feeds(test_args: list[str], tmp_path: Path, capsys: pytest.
     "test_args",
     (
         ["-f", "https://rss.art19.com/wecrashed"],
-        ["-f", "http://feeds.libsyn.com/92106/rss", "-l", "1"],  # knowledge fight
+        [
+            "-f",
+            "https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/e5f91208-cc7e-4726-a312-"
+            "ae280140ad11/d64f756d-6d5e-4fae-b24f-ae280140ad36/podcast.rss",
+            "-l",
+            "1",
+        ],  # knowledge fight
     ),
 )
 def test_download_single_feed(test_args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture):
