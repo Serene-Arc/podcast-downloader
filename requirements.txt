@@ -3,3 +3,4 @@ click
 feedparser
 multidict
 mutagen
+pytest-asyncio
