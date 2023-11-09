@@ -24,7 +24,7 @@ def test_download_no_feeds(test_args: list[str], tmp_path: Path, capsys: pytest.
 @pytest.mark.parametrize(
     "test_args",
     (
-        ["-f", "https://rss.art19.com/wecrashed"],
+        ["-f", "https://rss.art19.com/wecrashed", "-l", "5"],
         [
             "-f",
             "https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/e5f91208-cc7e-4726-a312-"
