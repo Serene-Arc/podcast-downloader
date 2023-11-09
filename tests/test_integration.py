@@ -19,6 +19,8 @@ def test_download_no_feeds(test_args: list[str], tmp_path: Path, capsys: pytest.
     assert "No feeds have been provided" in err
 
 
+@pytest.mark.slow
+@pytest.mark.online
 @pytest.mark.parametrize(
     "test_args",
     (
