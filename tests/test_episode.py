@@ -3,7 +3,7 @@
 import asyncio
 import hashlib
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import aiohttp
 import pytest
@@ -111,11 +111,10 @@ def test_clean_name(test_name: str, expected: str):
 @pytest.mark.parametrize(
     ("test_url", "expected_hash"),
     (
-        ("https://sphinx.acast.com/p/open/s/5fc574d8d429ec34a8292b1c/e/621d127983ff8c00129dd5c6/media.mp3", ""),
         (
-            "https://b0c2ddc39d13e1c0ddad-93a52a5bc9e7cc06050c1a999beb3694."
-            "ssl.cf1.rackcdn.com/20847573b558163630f6343f3707b637-80.png",
-            "69cce47bd5ef08359a1def41f4cd132b",
+            "https://www.podtrac.com/pts/redirect.mp3/pdst.fm/e/chrt.fm/track/G481GD/traffic.megaphone.fm/"
+            "ADV6668031883.mp3?updated=1540880564",
+            "75c75241ac9f66ad3ffb14215ef4d646",
         ),
     ),
 )
@@ -130,7 +129,8 @@ async def test_episode_download(test_url: str, expected_hash: str, tmp_path: Pat
         out_path = Path(tmp_path, "test")
         mock_episode.file_path = out_path
         try:
-            await Episode.download(mock_episode, session)
+            with patch("podcastdownloader.tag_engine.TagEngine.tag_episode"):
+                await Episode.download(mock_episode, session)
         except TagEngineError:
             pass
         test_hash = hashlib.md5()
