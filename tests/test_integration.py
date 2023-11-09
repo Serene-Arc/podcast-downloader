@@ -41,4 +41,3 @@ def test_download_single_feed(test_args: list[str], tmp_path: Path, capsys: pyte
     main.main(args)
     out, err = capsys.readouterr()
     assert "Failed to download" not in err
-    pass
