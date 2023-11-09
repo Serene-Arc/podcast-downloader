@@ -18,6 +18,7 @@ def client_session() -> aiohttp.ClientSession:
     return out
 
 
+@pytest.mark.online
 @pytest.mark.parametrize(
     ("test_link_dict", "expected"),
     (
@@ -50,6 +51,7 @@ def test_episode_find_url(test_link_dict: list[dict], expected: str):
     assert result == expected
 
 
+@pytest.mark.online
 @pytest.mark.parametrize(
     "test_link_dict",
     (
@@ -72,6 +74,7 @@ def test_episode_find_url_bad(test_link_dict: list[dict]):
         Episode._find_url(test_dict)
 
 
+@pytest.mark.online
 @pytest.mark.parametrize(
     ("test_url", "expected"),
     (
@@ -103,6 +106,8 @@ def test_clean_name(test_name: str, expected: str):
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.online
 @pytest.mark.parametrize(
     ("test_url", "expected_hash"),
     (
